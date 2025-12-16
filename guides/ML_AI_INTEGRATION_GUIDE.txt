@@ -1,0 +1,811 @@
+================================================================================
+ML/AI INTEGRATION GUIDE FOR FIBO EMOTION STUDIO
+How to Build & Integrate Deep Learning Models for AI Therapy
+================================================================================
+
+OVERVIEW
+--------
+This document explains how Machine Learning and Deep Learning models integrate
+into your FIBO Emotion Studio project, what models you need to build, and how
+to build them from scratch (instead of relying on third-party APIs).
+
+TRANSITION PATH:
+Phase 1: Use third-party APIs (OpenAI) → Ship MVP fast
+Phase 2: Build custom models → Gain control, reduce costs, improve privacy
+Phase 3: Advanced models → Multi-modal, personalized therapy
+
+
+================================================================================
+PART 1: CURRENT ARCHITECTURE (MVP - Using APIs)
+================================================================================
+
+In your MVP, the AI/ML components work like this:
+
+┌─────────────┐
+│   User      │
+│  Journals   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────┐
+│  /api/analyze (Next.js API Route)  │
+│                                     │
+│  ┌───────────────────────────────┐ │
+│  │  OpenAI GPT-4 API Call        │ │──► Emotion Analysis
+│  │  "Analyze this journal entry" │ │    (anxiety, 8/10, etc.)
+│  └───────────────────────────────┘ │
+│                                     │
+│  ┌───────────────────────────────┐ │
+│  │  Rule-Based Mapping           │ │──► Visual Parameters
+│  │  emotion → visual params      │ │    (light, color, camera)
+│  └───────────────────────────────┘ │
+└─────────────────────────────────────┘
+       │
+       ▼
+┌─────────────────────────────────────┐
+│  /api/generate (Next.js API Route) │
+│                                     │
+│  ┌───────────────────────────────┐ │
+│  │  FIBO API Call                │ │──► Generated Image
+│  │  JSON params → image          │ │
+│  └───────────────────────────────┘ │
+└─────────────────────────────────────┘
+
+KEY LIMITATION: You're 100% dependent on external APIs (costly, privacy issues).
+
+
+================================================================================
+PART 2: TARGET ARCHITECTURE (Custom ML Models)
+================================================================================
+
+Your future architecture will replace API calls with custom models:
+
+┌─────────────┐
+│   User      │
+│  Journals   │
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│  BACKEND ML INFERENCE SERVICE (Python FastAPI)           │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │  MODEL 1: Emotion Classification Model             │ │
+│  │  (Fine-tuned BERT or DistilBERT)                   │ │
+│  │                                                    │ │
+│  │  Input:  "I feel like I'm drowning in work..."    │ │
+│  │  Output: {                                         │ │
+│  │    primary: "anxiety",                             │ │
+│  │    secondary: "overwhelm",                         │ │
+│  │    intensity: 0.82,                                │ │
+│  │    confidence: 0.91                                │ │
+│  │  }                                                 │ │
+│  └────────────────────────────────────────────────────┘ │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │  MODEL 2: Scene Metaphor Generator                 │ │
+│  │  (Fine-tuned GPT-2 or T5)                          │ │
+│  │                                                    │ │
+│  │  Input:  anxiety + overwhelm + high intensity      │ │
+│  │  Output: "A small boat in a stormy ocean,         │ │
+│  │           dark clouds, turbulent waves"            │ │
+│  └────────────────────────────────────────────────────┘ │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │  MODEL 3: Visual Parameter Predictor                │ │
+│  │  (Neural Network - Custom Architecture)            │ │
+│  │                                                    │ │
+│  │  Input:  emotion vectors + intensity               │ │
+│  │  Output: {                                         │ │
+│  │    light_level: 0.25,                              │ │
+│  │    color_palette: "cool_blue",                     │ │
+│  │    openness: 0.15,                                 │ │
+│  │    camera_angle: "tight_close",                    │ │
+│  │    contrast: 0.78                                  │ │
+│  │  }                                                 │ │
+│  └────────────────────────────────────────────────────┘ │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │  MODEL 4: Crisis Detection Model                   │ │
+│  │  (Fine-tuned RoBERTa for binary classification)   │ │
+│  │                                                    │ │
+│  │  Input:  journal text                              │ │
+│  │  Output: {                                         │ │
+│  │    is_crisis: false,                               │ │
+│  │    risk_score: 0.12,                               │ │
+│  │    needs_escalation: false                         │ │
+│  │  }                                                 │ │
+│  └────────────────────────────────────────────────────┘ │
+│                                                          │
+│  ┌────────────────────────────────────────────────────┐ │
+│  │  OPTIONAL MODEL 5: Conversational Reframing Bot    │ │
+│  │  (Fine-tuned LLaMA or Mistral)                     │ │
+│  │                                                    │ │
+│  │  Helps user explore their emotions through        │ │
+│  │  gentle, CBT-style questions.                      │ │
+│  └────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────┐
+│  FIBO Image Generation   │  (This part stays the same)
+│  JSON → Image            │
+└──────────────────────────┘
+
+
+================================================================================
+PART 3: DETAILED MODEL SPECIFICATIONS
+================================================================================
+
+MODEL 1: EMOTION CLASSIFICATION MODEL
+--------------------------------------
+Purpose: Detect emotions from journal text with high accuracy.
+
+Base Architecture:
+- Start with: DistilBERT (smaller, faster) or BERT-base
+- Task: Multi-label classification
+- Output classes:
+  Primary emotions: [anxiety, sadness, anger, joy, fear, disgust, 
+                     surprise, hope, overwhelm, peace, confusion]
+  Intensity: Regression (0.0 - 1.0)
+
+Training Data Sources:
+1. GoEmotions dataset (Google, 58k Reddit comments, 27 emotions)
+2. Emotion Intensity dataset (SemEval)
+3. Custom labeled therapy transcripts (if available)
+4. Reddit mental health posts (r/depression, r/anxiety)
+
+Training Process:
+1. Download pre-trained DistilBERT from Hugging Face
+2. Add classification head:
+   - Emotions: Multi-label sigmoid layer (11 classes)
+   - Intensity: Additional regression head (1 output)
+3. Fine-tune on combined emotion datasets
+4. Train for 3-5 epochs with:
+   - Learning rate: 2e-5
+   - Batch size: 16
+   - AdamW optimizer
+   - Weighted loss (to handle class imbalance)
+
+Evaluation Metrics:
+- F1 score per emotion class
+- Mean Absolute Error for intensity
+- Overall accuracy
+
+Expected Performance:
+- F1 score: 0.75-0.85 (depending on data quality)
+- Inference time: ~50ms on CPU, ~10ms on GPU
+
+How to Build:
+```python
+from transformers import DistilBertForSequenceClassification, Trainer
+from datasets import load_dataset
+
+# Load model
+model = DistilBertForSequenceClassification.from_pretrained(
+    "distilbert-base-uncased",
+    num_labels=11,  # 11 emotion classes
+    problem_type="multi_label_classification"
+)
+
+# Load dataset
+dataset = load_dataset("google-research-datasets/go_emotions")
+
+# Train
+trainer = Trainer(
+    model=model,
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['validation']
+)
+
+trainer.train()
+model.save_pretrained("./emotion_classifier")
+```
+
+Integration Point:
+- POST /api/analyze calls this model's inference endpoint
+- Input: journal_text (string)
+- Output: emotion_analysis (JSON)
+
+
+MODEL 2: SCENE METAPHOR GENERATOR
+----------------------------------
+Purpose: Generate symbolic visual descriptions from emotions.
+
+Base Architecture:
+- Option A: Fine-tuned GPT-2 (345M params, runs locally)
+- Option B: Fine-tuned T5-small (60M params, faster)
+- Task: Conditional text generation
+
+Training Data:
+You need to create a custom dataset:
+- Format: (emotion + intensity) → (scene description)
+- Example:
+  Input: "anxiety: 0.8, overwhelm: 0.6"
+  Output: "A person standing in a narrow hallway with walls closing in, 
+           dim flickering lights, shadows growing"
+
+Create ~2,000-5,000 examples by:
+1. Using GPT-4 to generate initial examples
+2. Manually curating for quality
+3. Ensuring diversity of metaphors (ocean, forest, room, city, sky, etc.)
+
+Training Process:
+1. Format as prompt-completion pairs
+2. Fine-tune GPT-2 or T5 on this dataset
+3. Use temperature sampling for variety
+
+Expected Performance:
+- Generate diverse, safe metaphors
+- Inference time: ~100ms
+
+How to Build:
+```python
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, Trainer
+
+model = GPT2LMHeadModel.from_pretrained("gpt2")
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+# Prepare dataset in format:
+# "EMOTIONS: anxiety 0.8, overwhelm 0.6 | SCENE: [description]"
+
+# Fine-tune
+trainer = Trainer(model=model, train_dataset=your_dataset)
+trainer.train()
+```
+
+Integration Point:
+- Called after Model 1 detects emotions
+- Generates the "scene_metaphor" field
+
+
+MODEL 3: VISUAL PARAMETER PREDICTOR
+------------------------------------
+Purpose: Map emotions to specific visual parameters for FIBO.
+
+Base Architecture:
+- Custom feedforward neural network
+- Input layer: Emotion embeddings (from Model 1)
+- Hidden layers: 128 → 64 → 32 neurons
+- Output layer: 5-7 visual parameters (continuous values)
+
+Training Data:
+You need to create labeled examples:
+- Collect 1,000+ (emotion, intensity) → visual_params mappings
+- Start with rule-based mappings, then refine with user feedback
+- Example:
+  Input: anxiety=0.8, sadness=0.3
+  Output: {
+    light_level: 0.25,
+    color_palette_code: 2,  # (0=warm, 1=neutral, 2=cool)
+    openness: 0.15,
+    camera_distance: 0.2,
+    contrast: 0.78
+  }
+
+Training Process:
+1. Encode emotions as one-hot vectors or embeddings
+2. Normalize visual parameters to [0, 1] range
+3. Train with MSE loss
+4. Use 80/20 train/validation split
+
+Expected Performance:
+- Mean Absolute Error: < 0.1 per parameter
+- Very fast inference: < 5ms
+
+How to Build:
+```python
+import torch
+import torch.nn as nn
+
+class VisualParamPredictor(nn.Module):
+    def __init__(self, num_emotions=11, num_params=5):
+        super().__init__()
+        self.network = nn.Sequential(
+            nn.Linear(num_emotions + 1, 128),  # +1 for intensity
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, num_params),
+            nn.Sigmoid()  # Output in [0, 1]
+        )
+    
+    def forward(self, emotion_vector, intensity):
+        x = torch.cat([emotion_vector, intensity], dim=1)
+        return self.network(x)
+
+# Train with MSE loss
+model = VisualParamPredictor()
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+```
+
+Integration Point:
+- Called after emotion classification
+- Outputs JSON structure that FIBO API needs
+
+
+MODEL 4: CRISIS DETECTION MODEL
+--------------------------------
+Purpose: Identify high-risk situations requiring immediate human intervention.
+
+Base Architecture:
+- Fine-tuned RoBERTa-base (safety-critical, needs high accuracy)
+- Task: Binary classification (crisis / not crisis)
+- Also outputs risk scores for different categories:
+  - Self-harm risk
+  - Suicidal ideation
+  - Harm to others
+  - Severe mental health episode
+
+Training Data Sources:
+1. CLPsych shared tasks (mental health detection)
+2. Reddit (r/SuicideWatch vs r/CasualConversation for contrast)
+3. DAIC-WOZ depression detection dataset
+4. Crisis Text Line anonymized data (if available)
+5. Synthetic augmentation with GPT-4 (ethically generated examples)
+
+⚠️ CRITICAL: Handle this data with extreme care. Privacy and ethics are paramount.
+
+Training Process:
+1. Heavy data augmentation to avoid false positives
+2. Class balancing (crisis examples are rare)
+3. Conservative thresholds (better false positive than false negative)
+4. Ensemble with rule-based checks (explicit keyword matching)
+
+Expected Performance:
+- Recall: > 0.95 (must catch real crises)
+- Precision: > 0.70 (some false positives acceptable)
+- F1: > 0.80
+
+How to Build:
+```python
+from transformers import RobertaForSequenceClassification
+
+model = RobertaForSequenceClassification.from_pretrained(
+    "roberta-base",
+    num_labels=2
+)
+
+# Fine-tune on crisis detection dataset
+# Use weighted loss to penalize false negatives more
+```
+
+Integration Point:
+- First check in /api/analyze (before emotion classification)
+- If crisis detected: Skip image generation, show resources
+
+
+MODEL 5 (OPTIONAL): CONVERSATIONAL REFRAMING BOT
+-------------------------------------------------
+Purpose: Guide users through CBT-style reframing exercises.
+
+Base Architecture:
+- Fine-tuned Mistral-7B or LLaMA-2-7B
+- Instruction-tuned for therapeutic conversation
+- Constrained generation (no harmful advice)
+
+Training Data:
+1. Therapy conversation datasets (if available)
+2. CBT exercise scripts
+3. Synthetic conversations generated with GPT-4, formatted as:
+   User: "I always fail at everything."
+   Bot: "I hear that you're feeling discouraged. When you say 'always,' 
+         can you think of even one small thing that went okay recently?"
+
+Training Process:
+1. Instruction fine-tuning with LoRA (Parameter-Efficient)
+2. RLHF (Reinforcement Learning from Human Feedback) if possible
+3. Red-teaming to ensure safe responses
+
+Expected Performance:
+- Empathetic, non-judgmental tone
+- Avoid giving medical advice
+- Redirect to professionals when appropriate
+
+How to Build:
+```python
+from peft import LoraConfig, get_peft_model
+from transformers import AutoModelForCausalLM
+
+base_model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-v0.1")
+
+# Apply LoRA
+lora_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    target_modules=["q_proj", "v_proj"],
+    lora_dropout=0.05
+)
+
+model = get_peft_model(base_model, lora_config)
+# Fine-tune on therapy conversations
+```
+
+Integration Point:
+- New API endpoint: POST /api/chat
+- Used in a separate chat interface (not core MVP)
+
+
+================================================================================
+PART 4: ML INFRASTRUCTURE & DEPLOYMENT
+================================================================================
+
+SERVING INFRASTRUCTURE
+----------------------
+You'll need a separate ML inference service:
+
+Option A: Simple FastAPI Server
+--------------------------------
+File: ml_service/main.py
+
+```python
+from fastapi import FastAPI
+import torch
+from transformers import DistilBertForSequenceClassification, AutoTokenizer
+
+app = FastAPI()
+
+# Load models on startup
+emotion_model = DistilBertForSequenceClassification.from_pretrained("./models/emotion_classifier")
+emotion_tokenizer = AutoTokenizer.from_pretrained("./models/emotion_classifier")
+emotion_model.eval()  # Set to inference mode
+
+@app.post("/analyze_emotion")
+async def analyze_emotion(text: str):
+    inputs = emotion_tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    
+    with torch.no_grad():
+        outputs = emotion_model(**inputs)
+        probabilities = torch.sigmoid(outputs.logits)[0]
+    
+    emotions = ["anxiety", "sadness", "anger", "joy", "fear", 
+                "disgust", "surprise", "hope", "overwhelm", "peace", "confusion"]
+    
+    # Get top emotions
+    top_indices = probabilities.argsort(descending=True)[:2]
+    
+    return {
+        "primary_emotion": emotions[top_indices[0]],
+        "secondary_emotion": emotions[top_indices[1]],
+        "intensity": float(probabilities[top_indices[0]]),
+        "all_scores": {emotion: float(probabilities[i]) for i, emotion in enumerate(emotions)}
+    }
+
+# Run with: uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Option B: Hugging Face Inference Endpoints
+-------------------------------------------
+- Upload trained models to Hugging Face Hub
+- Use their managed inference API
+- Easier deployment, but costs money
+
+Option C: Dockerized Service
+-----------------------------
+Create Dockerfile:
+```dockerfile
+FROM python:3.10
+
+RUN pip install torch transformers fastapi uvicorn
+
+COPY ./models /app/models
+COPY ./main.py /app/main.py
+
+WORKDIR /app
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Deploy to:
+- Railway
+- Render
+- Google Cloud Run
+- AWS Lambda (with larger timeout)
+
+
+INTEGRATION WITH NEXT.JS APP
+-----------------------------
+Your Next.js API routes become thin wrappers:
+
+File: app/api/analyze/route.ts
+```typescript
+export async function POST(request: Request) {
+  const { journal_text } = await request.json();
+  
+  // Call ML service instead of OpenAI
+  const emotionResponse = await fetch('http://ml-service:8000/analyze_emotion', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: journal_text })
+  });
+  
+  const emotionData = await emotionResponse.json();
+  
+  // Continue with rest of logic...
+  return Response.json(emotionData);
+}
+```
+
+
+PERFORMANCE OPTIMIZATION
+-------------------------
+1. Model Quantization:
+   - Convert models to INT8 (reduces size by 4x)
+   - Use ONNX Runtime for faster inference
+   - Minimal accuracy loss
+
+2. Batching:
+   - Group multiple requests together
+   - Improves GPU utilization
+
+3. Caching:
+   - Cache emotion analysis for identical text
+   - Use Redis for fast lookups
+
+4. GPU vs CPU:
+   - Small models (DistilBERT): OK on CPU
+   - Large models (Mistral-7B): Need GPU
+   - Consider GPU for production scale
+
+
+================================================================================
+PART 5: DATA COLLECTION & CONTINUOUS IMPROVEMENT
+================================================================================
+
+INITIAL DATA STRATEGY
+---------------------
+Since you won't have user data at first:
+
+1. Start with public datasets:
+   - GoEmotions (emotion classification)
+   - Reddit mental health (emotion + context)
+   - SemEval (emotion intensity)
+
+2. Synthetic data generation:
+   - Use GPT-4 to generate journal entries
+   - Label them with emotions
+   - Create 5,000+ examples for initial training
+
+3. Manual labeling:
+   - You + teammates label 500-1,000 examples
+   - Focus on edge cases and nuanced emotions
+
+
+USER FEEDBACK LOOP
+-------------------
+Once deployed, collect data ethically:
+
+1. Opt-in data collection:
+   - "Help improve our models" checkbox
+   - Anonymous by default
+   - Clear privacy policy
+
+2. Implicit feedback:
+   - User adjusts sliders → record what they changed
+   - This tells you when model was wrong
+
+3. Explicit feedback:
+   - "Was this emotion accurate?" thumbs up/down
+   - "Did this image resonate?" rating
+
+4. Active learning:
+   - Model flags uncertain predictions
+   - Request manual labels for those cases
+   - Retrain with new data
+
+
+RETRAINING PIPELINE
+--------------------
+Set up automated retraining:
+
+1. Weekly/monthly schedule
+2. Collect new labeled data from user feedback
+3. Retrain models on combined old + new data
+4. Validate on hold-out test set
+5. A/B test new model vs old model
+6. Deploy if metrics improve
+
+
+================================================================================
+PART 6: PROGRESSIVE IMPLEMENTATION ROADMAP
+================================================================================
+
+MONTH 1-2: MVP with APIs (DONE)
+-------------------------------
+✓ Use OpenAI API for emotion analysis
+✓ Rule-based visual parameter mapping
+✓ Focus on UI/UX and FIBO integration
+
+MONTH 3-4: Replace Emotion Classification
+------------------------------------------
+□ Collect/label emotion training data (2,000+ examples)
+□ Fine-tune DistilBERT on emotion classification
+□ Build FastAPI inference service
+□ Deploy and integrate with Next.js app
+□ Compare accuracy vs OpenAI
+□ Switch to custom model if performance is acceptable
+
+MONTH 5-6: Add Crisis Detection
+--------------------------------
+□ Collect crisis detection dataset
+□ Fine-tune RoBERTa on crisis classification
+□ Implement safety guardrails
+□ Test extensively (false negatives are unacceptable)
+□ Deploy crisis detector
+
+MONTH 7-8: Build Visual Parameter Predictor
+--------------------------------------------
+□ Collect (emotion → visual_params) training data
+□ Start with user slider adjustments as labels
+□ Train neural network predictor
+□ A/B test vs rule-based mapping
+□ Measure image quality with user ratings
+
+MONTH 9-10: Scene Metaphor Generation
+--------------------------------------
+□ Create metaphor dataset (emotion → scene description)
+□ Fine-tune GPT-2 or T5
+□ Integrate with pipeline
+□ Ensure diverse, creative outputs
+
+MONTH 11-12: Conversational Bot (Optional)
+-------------------------------------------
+□ Collect therapy conversation data
+□ Fine-tune LLaMA/Mistral with LoRA
+□ Build chat interface
+□ Extensive safety testing
+□ Limited beta release
+
+
+================================================================================
+PART 7: COST & RESOURCE REQUIREMENTS
+================================================================================
+
+COMPUTE REQUIREMENTS
+--------------------
+Model Training:
+- GPU: NVIDIA RTX 3090 or cloud GPU (A100, V100)
+- Time: 2-8 hours per model (depending on size)
+- Cloud cost: $10-50 per training run
+
+Model Inference (Production):
+- CPU: OK for small models, slow for large models
+- GPU: Recommended for real-time inference
+- Cost: $50-200/month for GPU server
+
+Storage:
+- Models: 200MB (DistilBERT) to 15GB (Mistral-7B)
+- Training data: 1-5GB
+
+Alternative (Budget-Friendly):
+- Use Google Colab (free GPU) for training
+- Deploy small models on CPU-only servers
+- Use model quantization to reduce size
+
+
+HUMAN RESOURCES
+----------------
+For ML development, you need:
+- 1 ML Engineer (you, after learning)
+- Optional: 1 Data Labeler (part-time)
+- Optional: 1 Mental health expert (consultant for safety validation)
+
+
+TIME INVESTMENT
+---------------
+Learning required skills: 3-6 months
+Building first custom model: 2-4 weeks
+Full ML pipeline: 3-6 months
+Becoming proficient: 1-2 years
+
+
+================================================================================
+PART 8: ETHICAL CONSIDERATIONS
+================================================================================
+
+DATA PRIVACY
+------------
+□ Never store raw journal text unless user explicitly consents
+□ Anonymize all data used for training
+□ Comply with GDPR, HIPAA (if applicable)
+□ Encrypt data at rest and in transit
+□ Allow users to delete their data
+
+MODEL SAFETY
+------------
+□ Never claim to replace therapy
+□ Always escalate crisis situations to humans
+□ Avoid reinforcing negative thought patterns
+□ Test for bias (gender, race, age)
+□ Red-team the model for harmful outputs
+
+TRANSPARENCY
+------------
+□ Explain how the AI works (in simple terms)
+□ Show confidence scores
+□ Let users see what data is being collected
+□ Provide opt-out for data collection
+
+
+================================================================================
+SUMMARY: YOUR PATH FORWARD
+================================================================================
+
+IMMEDIATE (MVP - Next 2 weeks):
+✓ Ship with OpenAI API
+✓ Focus on product-market fit
+✓ Collect user feedback
+
+SHORT TERM (Month 3-4):
+→ Learn PyTorch, Transformers library
+→ Fine-tune your first emotion classifier
+→ Replace OpenAI with custom model
+
+MEDIUM TERM (Month 5-8):
+→ Build visual parameter predictor
+→ Add crisis detection
+→ Improve model accuracy with user data
+
+LONG TERM (Month 9-12):
+→ Add conversational reframing bot
+→ Multi-modal inputs (voice, images)
+→ Personalized models per user
+
+
+KEY INSIGHT:
+-----------
+You don't need to build all ML models from day 1. Start with APIs, validate
+the product, THEN invest in custom models. This is how successful ML products
+are built—iterate, learn, improve.
+
+Your learning path should match your product roadmap. Master emotion
+classification first (highest ROI), then expand to other components.
+
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Read this entire document again
+2. Pick ONE model to focus on first (recommend: emotion classifier)
+3. Follow a structured ML course:
+   - Fast.ai (Practical Deep Learning)
+   - Hugging Face NLP Course (free)
+   - DeepLearning.AI (Specializations)
+4. Build a simple emotion classifier as a standalone project
+5. Once working, integrate into FIBO Emotion Studio
+6. Iterate from there
+
+Good luck! You're building something meaningful. 🚀
+
+
+================================================================================
+APPENDIX: USEFUL RESOURCES
+================================================================================
+
+DATASETS:
+- GoEmotions: https://github.com/google-research/google-research/tree/master/goemotions
+- SemEval Emotion Intensity: https://saifmohammad.com/WebPages/EmotionIntensity-SharedTask.html
+- DAIC-WOZ (depression): https://dcapswoz.ict.usc.edu/
+- Reddit Mental Health: https://ir.cs.georgetown.edu/resources/reddit-mental-health.html
+
+LIBRARIES:
+- Hugging Face Transformers: https://huggingface.co/docs/transformers/
+- PyTorch: https://pytorch.org/
+- FastAPI: https://fastapi.tiangolo.com/
+- LangChain: https://python.langchain.com/
+
+COURSES:
+- Fast.ai: https://course.fast.ai/
+- Hugging Face NLP: https://huggingface.co/learn/nlp-course/
+- DeepLearning.AI: https://www.deeplearning.ai/
+
+SAFETY RESOURCES:
+- AI Safety Guidelines: https://www.partnershiponai.org/
+- Mental Health Tech Ethics: https://www.mentalhealth.org.uk/
+
+================================================================================
+END OF DOCUMENT
+================================================================================

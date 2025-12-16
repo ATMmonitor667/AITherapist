@@ -1,0 +1,591 @@
+================================================================================
+FIBO EMOTION STUDIO - TECH STACK BY PHASE
+================================================================================
+
+This document outlines the exact technologies to use at each development phase.
+Follow this roadmap to build progressively from MVP to production-ready system.
+
+
+================================================================================
+PHASE 1: MVP / HACKATHON DEMO (WEEKS 1-4)
+================================================================================
+Goal: Ship working demo fast using third-party APIs
+Timeline: 2-4 weeks
+Budget: ~$10-30/month
+
+FRONTEND
+--------
+✓ Next.js 14+ (App Router)
+  - Why: Built-in API routes, SSR, easy deployment, TypeScript support
+  - Install: npx create-next-app@latest --typescript --tailwind --app
+
+✓ TypeScript
+  - Why: Type safety, better developer experience, catches bugs early
+  
+✓ Tailwind CSS
+  - Why: Rapid styling, responsive design, customizable
+  
+✓ Shadcn UI (or Radix UI)
+  - Why: Beautiful, accessible components, copy-paste workflow
+  - Install: npx shadcn-ui@latest init
+  
+✓ React Icons / Lucide React
+  - Why: Modern icon library
+  - Install: npm install lucide-react
+
+STATE MANAGEMENT
+----------------
+✓ React Hooks (useState, useContext, useEffect)
+  - Why: Simple, built-in, sufficient for MVP scope
+  
+✓ No Redux/Zustand needed yet
+
+BACKEND (MVP)
+-------------
+✓ Next.js API Routes (App Router)
+  - Location: app/api/*/route.ts
+  - Why: No separate backend needed, unified codebase
+  
+✓ Node.js Runtime
+  - Comes with Next.js
+
+API INTEGRATIONS
+----------------
+✓ OpenAI API (GPT-4 or GPT-3.5 Turbo)
+  - Purpose: Emotion analysis from journal text
+  - Install: npm install openai
+  - Cost: ~$0.01-0.10 per analysis
+  
+✓ FIBO API
+  - Purpose: JSON-controlled image generation
+  - Check hackathon for API access/credits
+  
+✓ Axios or Fetch API
+  - Purpose: HTTP requests
+  - Install: npm install axios (optional, fetch is built-in)
+
+DATABASE
+--------
+✓ Supabase (Managed PostgreSQL)
+  - Why: Free tier, easy setup, built-in auth, storage, real-time
+  - Install: npm install @supabase/supabase-js
+  - Free tier: 500MB database, 1GB storage
+  - Alternative: Railway, Neon, or Vercel Postgres
+
+✓ Prisma ORM (optional but recommended)
+  - Why: Type-safe queries, migrations, excellent DX
+  - Install: npm install prisma @prisma/client
+  - Setup: npx prisma init
+
+STORAGE
+-------
+✓ Supabase Storage (for images)
+  - Why: Integrated with Supabase, free 1GB
+  - Alternative: Cloudinary (free 25GB bandwidth/month)
+
+DEPLOYMENT
+----------
+✓ Vercel
+  - Why: Zero-config Next.js deployment, free tier, preview URLs
+  - Free tier: Unlimited personal projects, 100GB bandwidth
+  - Deploy: vercel --prod
+  - Alternative: Netlify, Railway
+
+VERSION CONTROL
+---------------
+✓ Git + GitHub
+  - Why: Industry standard, free, integrates with Vercel
+  
+DEVELOPMENT TOOLS
+-----------------
+✓ ESLint
+  - Comes with Next.js
+  
+✓ Prettier (optional)
+  - Install: npm install -D prettier
+  
+✓ VS Code
+  - Extensions: ESLint, Prettier, Tailwind IntelliSense
+
+ENVIRONMENT VARIABLES
+---------------------
+Create .env.local:
+  OPENAI_API_KEY=sk-...
+  FIBO_API_KEY=...
+  FIBO_API_ENDPOINT=https://...
+  NEXT_PUBLIC_SUPABASE_URL=https://...
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+
+MVP TECH STACK SUMMARY
+----------------------
+Frontend:     Next.js 14 + TypeScript + Tailwind + Shadcn UI
+Backend:      Next.js API Routes
+AI/ML:        OpenAI API + FIBO API (external)
+Database:     Supabase (PostgreSQL)
+Storage:      Supabase Storage
+Deployment:   Vercel
+Total Cost:   ~$10-30/month
+
+
+================================================================================
+PHASE 2: POST-MVP ENHANCEMENTS (MONTHS 2-3)
+================================================================================
+Goal: Improve UX, add analytics, optimize performance
+Timeline: 1-2 months
+
+ADDITIONS TO MVP STACK
+----------------------
+✓ React Query (TanStack Query)
+  - Purpose: Better server state management, caching
+  - Install: npm install @tanstack/react-query
+  - Why: Automatic refetching, optimistic updates
+  
+✓ Zod
+  - Purpose: Runtime type validation, form validation
+  - Install: npm install zod
+  - Works well with Prisma
+  
+✓ React Hook Form
+  - Purpose: Better form handling
+  - Install: npm install react-hook-form @hookform/resolvers
+  
+✓ Date-fns or Day.js
+  - Purpose: Date formatting for session history
+  - Install: npm install date-fns
+  
+✓ Vercel Analytics
+  - Purpose: Track usage, performance
+  - Install: npm install @vercel/analytics
+  - Free on Vercel
+  
+✓ Sentry (optional)
+  - Purpose: Error tracking
+  - Free tier: 5,000 events/month
+
+TESTING (optional but recommended)
+----------------------------------
+✓ Vitest
+  - Purpose: Unit testing
+  - Install: npm install -D vitest
+  
+✓ React Testing Library
+  - Purpose: Component testing
+  - Install: npm install -D @testing-library/react
+  
+✓ Playwright (optional)
+  - Purpose: E2E testing
+  - Install: npm install -D @playwright/test
+
+
+================================================================================
+PHASE 3: CUSTOM ML MODELS (MONTHS 3-6)
+================================================================================
+Goal: Replace OpenAI API with custom emotion classification models
+Timeline: 3-4 months
+Budget: ~$50-100/month (with ML server)
+
+ML FRAMEWORK
+------------
+✓ Python 3.10+
+  - Why: ML ecosystem standard
+  
+✓ PyTorch
+  - Purpose: Neural network training and inference
+  - Install: pip install torch torchvision
+  - Why: Flexible, research-friendly, huge community
+  
+✓ Hugging Face Transformers
+  - Purpose: Pre-trained NLP models (BERT, GPT-2, etc.)
+  - Install: pip install transformers
+  - Why: State-of-the-art models, easy fine-tuning
+  
+✓ Hugging Face Datasets
+  - Purpose: Load training data
+  - Install: pip install datasets
+
+ML INFERENCE SERVER
+-------------------
+✓ FastAPI
+  - Purpose: Serve ML models via REST API
+  - Install: pip install fastapi uvicorn
+  - Why: Fast, async, automatic docs, modern Python
+  
+✓ Pydantic
+  - Purpose: Request/response validation
+  - Comes with FastAPI
+  
+✓ Python-multipart
+  - Purpose: Handle file uploads
+  - Install: pip install python-multipart
+
+TRAINING & EXPERIMENTATION
+---------------------------
+✓ Jupyter Notebooks
+  - Purpose: Experiment with models
+  - Install: pip install jupyter
+  
+✓ Weights & Biases (WandB)
+  - Purpose: Track training experiments
+  - Free for personal projects
+  - Install: pip install wandb
+  
+✓ TensorBoard (alternative)
+  - Purpose: Visualize training metrics
+  - Install: pip install tensorboard
+
+ML DEPLOYMENT
+-------------
+✓ Docker
+  - Purpose: Containerize ML service
+  - Create Dockerfile with Python + PyTorch + FastAPI
+  
+✓ Railway or Render
+  - Purpose: Host ML inference server
+  - Cost: ~$5-20/month
+  - Why: Simple deployment, persistent storage
+  
+✓ Modal.com (alternative)
+  - Purpose: Serverless GPU inference
+  - Cost: Pay per use (~$0.10-0.50 per hour GPU time)
+  - Why: Only pay when inference runs
+  
+✓ Hugging Face Inference Endpoints (alternative)
+  - Purpose: Managed ML hosting
+  - Cost: ~$60-100/month
+  - Why: Zero DevOps, automatic scaling
+
+MODEL STORAGE
+-------------
+✓ Hugging Face Hub
+  - Purpose: Store trained models
+  - Free for public models
+  - Push/pull models like Git repos
+
+ML DATASETS
+-----------
+✓ Hugging Face Datasets library
+  - Access to GoEmotions, SemEval, etc.
+  
+✓ Pandas
+  - Purpose: Data manipulation
+  - Install: pip install pandas
+
+COMPUTE FOR TRAINING
+--------------------
+Option A: Google Colab (free GPU)
+  - Free: 12-15 hours/day of GPU
+  - Pro: $10/month for more GPU time
+  
+Option B: Local GPU
+  - NVIDIA RTX 3060+ recommended
+  
+Option C: Cloud GPU
+  - Lambda Labs: ~$0.50/hour (RTX 3090)
+  - Vast.ai: ~$0.20-0.80/hour
+  - Google Cloud / AWS (more expensive)
+
+PHASE 3 ADDITIONS
+-----------------
+Frontend:        (Same as Phase 1)
+Backend:         Next.js API Routes + FastAPI (ML service)
+AI/ML:           Custom PyTorch models + FIBO API
+ML Inference:    FastAPI on Railway/Modal
+Database:        Supabase
+Storage:         Supabase + Hugging Face Hub (models)
+Deployment:      Vercel (frontend) + Railway (ML service)
+Total Cost:      ~$50-100/month
+
+
+================================================================================
+PHASE 4: ADVANCED FEATURES (MONTHS 6-12)
+================================================================================
+Goal: Add conversational AI, multi-modal inputs, personalization
+Timeline: 6+ months
+Budget: ~$100-300/month
+
+ADVANCED ML
+-----------
+✓ LLaMA 2 or Mistral 7B
+  - Purpose: Conversational reframing bot
+  - Install: Download from Hugging Face
+  - Requires: GPU with 16GB+ VRAM
+  
+✓ PEFT (Parameter-Efficient Fine-Tuning)
+  - Purpose: Fine-tune large models efficiently
+  - Install: pip install peft
+  - Enables LoRA, QLoRA, etc.
+  
+✓ BitsAndBytes
+  - Purpose: Model quantization (reduce memory)
+  - Install: pip install bitsandbytes
+  
+✓ LangChain
+  - Purpose: Build conversational agents with memory
+  - Install: pip install langchain
+  
+✓ ChromaDB or FAISS
+  - Purpose: Vector database for RAG
+  - Install: pip install chromadb
+  - Why: Retrieve relevant therapy techniques
+
+ADVANCED BACKEND
+----------------
+✓ Redis
+  - Purpose: Caching, session management
+  - Install: npm install ioredis
+  - Host: Upstash (free tier)
+  
+✓ Bull or BullMQ
+  - Purpose: Background job queue (async image generation)
+  - Install: npm install bull
+  
+✓ WebSockets (Socket.io)
+  - Purpose: Real-time chat for conversational bot
+  - Install: npm install socket.io
+
+AUTHENTICATION (if needed)
+--------------------------
+✓ NextAuth.js
+  - Purpose: User accounts, sessions
+  - Install: npm install next-auth
+  - Integrates with Supabase Auth
+  
+✓ Supabase Auth (alternative)
+  - Built into Supabase
+
+MONITORING & OBSERVABILITY
+---------------------------
+✓ Sentry
+  - Purpose: Error tracking
+  - Paid tier: ~$26/month
+  
+✓ LogRocket or FullStory
+  - Purpose: Session replay, user analytics
+  
+✓ Prometheus + Grafana (optional)
+  - Purpose: ML model performance monitoring
+
+ADVANCED DEPLOYMENT
+-------------------
+✓ Docker Compose
+  - Purpose: Orchestrate multiple services locally
+  
+✓ Kubernetes (optional, overkill for most cases)
+  - Purpose: Production-grade orchestration
+  
+✓ CI/CD Pipeline
+  - GitHub Actions (free for public repos)
+  - Run tests, deploy automatically
+
+PAYMENT (if monetizing)
+-----------------------
+✓ Stripe
+  - Purpose: Subscriptions, payments
+  - Install: npm install stripe
+
+PHASE 4 STACK
+-------------
+Frontend:         Next.js 14 + TypeScript + Tailwind
+Backend:          Next.js API Routes + FastAPI + Redis + WebSockets
+AI/ML:            Custom models + LLaMA/Mistral + LangChain + FIBO
+ML Inference:     FastAPI on dedicated GPU server or Modal
+Vector DB:        ChromaDB or Pinecone
+Database:         Supabase (PostgreSQL)
+Auth:             NextAuth.js or Supabase Auth
+Monitoring:       Sentry + Analytics
+Deployment:       Vercel + Railway/GCP
+Total Cost:       ~$100-300/month
+
+
+================================================================================
+TECHNOLOGY DECISION MATRIX
+================================================================================
+
+WHEN TO USE WHAT:
+
+TypeScript vs JavaScript:
+  → Always use TypeScript (catch bugs early, better DX)
+
+Next.js vs React (CRA/Vite):
+  → Use Next.js (built-in API routes, SSR, better for this use case)
+
+Tailwind vs CSS-in-JS vs Plain CSS:
+  → Use Tailwind (fastest development, great for prototyping)
+
+Supabase vs Firebase vs Raw PostgreSQL:
+  → MVP: Supabase (batteries included)
+  → Advanced: Raw PostgreSQL + Prisma (more control)
+
+Vercel vs Netlify vs Railway:
+  → Frontend: Vercel (best Next.js support)
+  → Backend/ML: Railway or Modal (GPU support)
+
+OpenAI API vs Custom Models:
+  → MVP: OpenAI (ship fast)
+  → Production: Custom models (privacy, cost, control)
+
+PyTorch vs TensorFlow:
+  → Use PyTorch (better for research, NLP, fine-tuning)
+
+FastAPI vs Flask vs Django:
+  → Use FastAPI (modern, fast, async, best for ML serving)
+
+Docker vs No Docker:
+  → MVP: No Docker (deploy directly)
+  → ML Service: Docker (reproducible environment)
+
+GPU Cloud Providers:
+  → Training: Google Colab (free tier) or Lambda Labs
+  → Inference: Modal.com (serverless) or Railway
+
+
+================================================================================
+PACKAGE.JSON SUMMARY (MVP)
+================================================================================
+
+{
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.0.0",
+    "@supabase/supabase-js": "^2.38.0",
+    "openai": "^4.20.0",
+    "axios": "^1.6.0",
+    "date-fns": "^3.0.0",
+    "lucide-react": "^0.300.0",
+    "@radix-ui/react-slider": "^1.1.2",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "tailwindcss": "^3.3.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "prettier": "^3.0.0"
+  }
+}
+
+
+================================================================================
+REQUIREMENTS.TXT SUMMARY (ML Service - Phase 3+)
+================================================================================
+
+# Core ML
+torch==2.1.0
+transformers==4.35.0
+datasets==2.15.0
+
+# API Server
+fastapi==0.104.0
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+
+# Utilities
+pandas==2.1.0
+numpy==1.24.0
+scikit-learn==1.3.0
+
+# Optional: Training tools
+jupyter==1.0.0
+wandb==0.16.0
+
+# Optional: Advanced features
+langchain==0.0.340
+chromadb==0.4.18
+peft==0.7.0
+
+
+================================================================================
+ESTIMATED COSTS BY PHASE
+================================================================================
+
+PHASE 1 (MVP):
+  Vercel:          $0 (free tier)
+  Supabase:        $0 (free tier, <500MB)
+  OpenAI API:      ~$10-30/month (depends on usage)
+  FIBO API:        $0 (hackathon credits)
+  Domain:          $10-15/year (optional)
+  ────────────────────────────────
+  TOTAL:           ~$10-30/month
+
+PHASE 3 (Custom ML):
+  Vercel:          $0-20 (may need Pro for usage)
+  Supabase:        $0-25 (may need Pro for storage)
+  Railway (ML):    $5-20/month
+  OpenAI:          $0 (replaced with custom models)
+  FIBO:            TBD
+  Training GPU:    $0 (use Colab free tier)
+  ────────────────────────────────
+  TOTAL:           ~$50-100/month
+
+PHASE 4 (Production):
+  Vercel:          $20 (Pro plan)
+  Supabase:        $25 (Pro plan)
+  Railway/GCP:     $50-100 (ML inference GPU)
+  Redis:           $0 (Upstash free tier)
+  Monitoring:      $26 (Sentry)
+  ────────────────────────────────
+  TOTAL:           ~$100-300/month
+
+
+================================================================================
+MIGRATION PATH
+================================================================================
+
+WEEK 1-4: MVP
+  Install: Next.js, Tailwind, Supabase, OpenAI SDK
+  Deploy: Vercel
+  Status: ✓ Working demo for hackathon
+
+MONTH 2-3: Optimize MVP
+  Add: React Query, Zod, analytics
+  Status: ✓ Production-ready MVP
+
+MONTH 3-6: Custom ML
+  Learn: PyTorch, Transformers
+  Build: Emotion classifier
+  Deploy: FastAPI on Railway
+  Replace: OpenAI API → Custom models
+  Status: ✓ Privacy-first, lower costs
+
+MONTH 6-12: Advanced Features
+  Add: LLaMA/Mistral, LangChain, Redis
+  Build: Conversational reframing bot
+  Status: ✓ Full-featured AI therapy companion
+
+
+================================================================================
+FINAL RECOMMENDATIONS
+================================================================================
+
+START HERE (Week 1):
+  ✓ Next.js 14 + TypeScript + Tailwind
+  ✓ Supabase
+  ✓ OpenAI API
+  ✓ Vercel
+
+ADD NEXT (Month 2-3):
+  ✓ React Query
+  ✓ Zod
+  ✓ Analytics
+
+BUILD CUSTOM ML (Month 3-6):
+  ✓ PyTorch + Transformers
+  ✓ FastAPI
+  ✓ Railway/Modal
+
+ADVANCED (Month 6+):
+  ✓ LangChain + LLaMA
+  ✓ Redis
+  ✓ WebSockets
+
+Keep it simple. Ship the MVP fast. Add complexity only when needed.
+
+
+================================================================================
+END OF TECH STACK GUIDE
+================================================================================

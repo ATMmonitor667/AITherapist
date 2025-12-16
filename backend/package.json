@@ -1,0 +1,47 @@
+{
+  "name": "echoscape-backend",
+  "version": "1.0.0",
+  "description": "EchoScape - AI Reflection & Visual Companion Backend",
+  "main": "dist/server.js",
+  "scripts": {
+    "predev": "npx kill-port 4000 || true",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "seed": "tsx src/scripts/seed.ts",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest"
+  },
+  "keywords": [
+    "ai",
+    "therapy",
+    "reflection",
+    "visual",
+    "emotion"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.86.2",
+    "axios": "^1.13.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "helmet": "^8.0.0",
+    "morgan": "^1.10.0",
+    "openai": "^6.10.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "nodemon": "^3.1.7",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.3"
+  }
+}

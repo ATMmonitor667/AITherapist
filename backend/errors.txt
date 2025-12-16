@@ -1,0 +1,75 @@
+src/controllers/analyzer.controller.ts(17,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/analyzer.controller.ts(38,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(14,23): error TS2305: Module '"../types"' has no exported member 'PaginatedResponse'.
+src/controllers/conversation.controller.ts(47,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(54,18): error TS2352: Conversion of type '{ success: true; data: Session; message: string; }' to type 'ApiResponse<Session>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: true; data: Session; message: string; }' but required in type 'ApiResponse<Session>'.
+src/controllers/conversation.controller.ts(62,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(79,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(90,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(105,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(121,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(137,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(153,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(168,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(175,18): error TS2352: Conversion of type '{ success: true; data: Session; message: string; }' to type 'ApiResponse<Session>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: true; data: Session; message: string; }' but required in type 'ApiResponse<Session>'.
+src/controllers/conversation.controller.ts(183,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/conversation.controller.ts(209,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/generate.controller.ts(18,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/generate.controller.ts(29,13): error TS2353: Object literal may only specify known properties, and 'original_image_url' does not exist in type 'UpdateSessionRequest'.
+src/controllers/generate.controller.ts(40,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/generate.controller.ts(56,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/generate.controller.ts(80,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/history.controller.ts(26,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/history.controller.ts(42,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/history.controller.ts(52,34): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/history.controller.ts(66,30): error TS2352: Conversion of type '{ success: false; error: string; }' to type 'ApiResponse<null>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'timestamp' is missing in type '{ success: false; error: string; }' but required in type 'ApiResponse<null>'.
+src/controllers/index.ts(1,15): error TS2307: Cannot find module './analyzer' or its corresponding type declarations.
+src/controllers/index.ts(2,15): error TS2307: Cannot find module './conversation' or its corresponding type declarations.
+src/controllers/session.controller.ts(4,10): error TS2305: Module '"../services"' has no exported member 'sessionService'.
+src/controllers/session.controller.ts(4,26): error TS2305: Module '"../services"' has no exported member 'conversationService'.
+src/controllers/session.controller.ts(4,47): error TS2305: Module '"../services"' has no exported member 'analyticsService'.
+src/controllers/session.controller.ts(170,17): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/controllers/session.controller.ts(171,14): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/controllers/visual.controller.ts(4,10): error TS2305: Module '"../services"' has no exported member 'sessionService'.
+src/controllers/visual.controller.ts(4,26): error TS2305: Module '"../services"' has no exported member 'visualService'.
+src/controllers/visual.controller.ts(4,41): error TS2305: Module '"../services"' has no exported member 'analyticsService'.
+src/controllers/visual.controller.ts(31,19): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/controllers/visual.controller.ts(32,16): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/controllers/visual.controller.ts(99,37): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/controllers/visual.controller.ts(101,35): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/routes/history.routes.ts(4,10): error TS2305: Module '"../controllers"' has no exported member 'historyController'.
+src/services/conversation.service.ts(3,22): error TS2307: Cannot find module '../config/db' or its corresponding type declarations.
+src/services/conversation.service.ts(157,11): error TS2322: Type 'SecondaryEmotion | "neutral"' is not assignable to type 'SecondaryEmotion'.
+  Type '"neutral"' is not assignable to type 'SecondaryEmotion'.
+src/services/crisis.service.ts(4,22): error TS2307: Cannot find module '../config/db' or its corresponding type declarations.
+src/services/ml.service.ts(24,13): error TS2322: Type 'string' is not assignable to type 'PrimaryEmotion | undefined'.
+src/services/ml.service.ts(25,13): error TS2322: Type 'string' is not assignable to type 'SecondaryEmotion | undefined'.
+src/services/session.service.ts(3,22): error TS2307: Cannot find module '../config/db' or its corresponding type declarations.
+src/types/api.types.ts(3,28): error TS2305: Module '"./sessions.types"' has no exported member 'Visual'.
+src/types/api.types.ts(3,36): error TS2305: Module '"./sessions.types"' has no exported member 'SessionSummary'.
+src/types/api.types.ts(3,52): error TS2459: Module '"./sessions.types"' declares 'VisualParams' locally, but it is not exported.
+src/types/api.types.ts(3,66): error TS2305: Module '"./sessions.types"' has no exported member 'EmotionVector'.
+src/types/api.types.ts(4,10): error TS2305: Module '"./emotions.types"' has no exported member 'CrisisDetectionResult'.

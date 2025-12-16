@@ -1,0 +1,727 @@
+================================================================================
+FIBO EMOTION STUDIO - MVP IMPLEMENTATION PLAN
+Visual Journaling and Reframing Companion
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+A web application that helps users visualize their emotional state through 
+AI-generated imagery using FIBO's JSON-controlled image generation. Users 
+journal about their feelings, the system generates metaphorical visuals, and 
+users can reframe those visuals by adjusting emotional parameters.
+
+⚠️  CRITICAL: This is NOT therapy. This is a self-reflection/wellness tool.
+    Always include prominent disclaimers.
+
+
+================================================================================
+MVP SCOPE - WHAT WE'RE BUILDING
+================================================================================
+
+MUST-HAVE FEATURES:
+1. ✓ Landing page with disclaimer and project explanation
+2. ✓ Single-session journaling flow
+   - Text input for emotional journaling
+   - AI emotion analysis
+   - FIBO-generated metaphorical image
+3. ✓ Emotion tags display (anxiety, hope, overwhelm, etc.)
+4. ✓ Reframe controls (sliders to adjust the visual)
+   - Hope slider (brightness/warmth)
+   - Intensity slider (contrast/camera distance)
+5. ✓ Session history (last 3-5 sessions in a grid view)
+6. ✓ Safety features (crisis detection + resources)
+
+NICE-TO-HAVE (if time permits):
+- Voice input
+- Multiple visual metaphor themes
+- Export/share functionality
+- User accounts
+
+
+================================================================================
+TECH STACK
+================================================================================
+
+FRONTEND:
+- Framework: Next.js 14+ (App Router)
+- Language: TypeScript
+- Styling: Tailwind CSS
+- UI Components: Shadcn UI or similar
+- State Management: React hooks (useState, useContext if needed)
+
+BACKEND:
+- API Routes: Next.js Route Handlers (/app/api/)
+- Runtime: Node.js
+
+AI/ML:
+- LLM: OpenAI GPT-4 or GPT-3.5 (for emotion analysis)
+- Image Generation: FIBO API (with JSON parameter control)
+
+DATABASE:
+- Supabase (PostgreSQL + Auth + Storage)
+- Alternative: Local PostgreSQL with Prisma ORM
+
+HOSTING:
+- Vercel (recommended for Next.js)
+- Alternative: Railway, Render
+
+
+================================================================================
+IMPLEMENTATION INSTRUCTIONS
+================================================================================
+
+PHASE 1: PROJECT SETUP (Day 1-2)
+---------------------------------
+
+STEP 1.1 - Initialize Next.js Project
+--------------------------------------
+1. Open terminal in your project directory
+2. Run: npx create-next-app@latest fibo-emotion-studio
+   - TypeScript: Yes
+   - ESLint: Yes
+   - Tailwind CSS: Yes
+   - App Router: Yes
+   - Import alias: Yes (@/*)
+
+3. Navigate into project:
+   cd fibo-emotion-studio
+
+STEP 1.2 - Install Dependencies
+--------------------------------
+npm install @supabase/supabase-js
+npm install openai
+npm install axios
+npm install date-fns
+npm install react-icons
+npm install @radix-ui/react-slider
+npm install lucide-react
+npm install clsx tailwind-merge
+
+STEP 1.3 - Environment Variables
+---------------------------------
+Create .env.local file in root:
+
+OPENAI_API_KEY=your_openai_key_here
+FIBO_API_KEY=your_fibo_key_here
+FIBO_API_ENDPOINT=https://api.fibo.example/generate
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
+
+⚠️  NEVER commit .env.local to git!
+
+STEP 1.4 - Project Structure
+-----------------------------
+Create the following folder structure:
+
+app/
+├── api/
+│   ├── analyze/
+│   │   └── route.ts          # LLM emotion analysis
+│   ├── generate/
+│   │   └── route.ts          # FIBO image generation
+│   └── history/
+│       └── route.ts          # Fetch session history
+├── session/
+│   └── page.tsx              # Main journaling interface
+├── history/
+│   └── page.tsx              # Session history grid
+├── layout.tsx
+└── page.tsx                  # Landing page
+
+lib/
+├── supabase.ts               # Supabase client
+├── openai.ts                 # OpenAI client setup
+├── types.ts                  # TypeScript interfaces
+└── utils.ts                  # Helper functions
+
+components/
+├── Disclaimer.tsx
+├── EmotionTags.tsx
+├── ReframeControls.tsx
+├── SessionCard.tsx
+└── LoadingState.tsx
+
+
+================================================================================
+PHASE 2: CORE DATA MODELS (Day 2)
+================================================================================
+
+STEP 2.1 - Define TypeScript Interfaces
+----------------------------------------
+Create lib/types.ts:
+
+export interface EmotionAnalysis {
+  primary_emotion: string;
+  secondary_emotion?: string;
+  intensity: number; // 0-10
+  scene_metaphor: string;
+  cognitive_pattern?: string;
+}
+
+export interface VisualParameters {
+  scene_type: string;        // "ocean", "forest", "room", "sky"
+  emotion: string;
+  camera_angle: string;      // "tight_close", "medium", "wide"
+  light_level: number;       // 0.0 - 1.0
+  color_palette: string;     // "cool_blue", "warm_orange", "neutral_gray"
+  openness: number;          // 0.0 - 1.0 (claustrophobic to open)
+  contrast: number;          // 0.0 - 1.0
+}
+
+export interface Session {
+  id: string;
+  timestamp: Date;
+  journal_text: string;
+  emotion_analysis: EmotionAnalysis;
+  visual_params: VisualParameters;
+  image_url: string;
+  reframed_image_url?: string;
+}
+
+STEP 2.2 - Supabase Database Schema
+------------------------------------
+Create a table in Supabase called "sessions":
+
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  journal_text TEXT NOT NULL,
+  emotion_data JSONB NOT NULL,
+  visual_params JSONB NOT NULL,
+  original_image_url TEXT NOT NULL,
+  reframed_image_url TEXT,
+  user_id UUID REFERENCES auth.users(id) -- Optional if you add auth
+);
+
+-- Create index for faster queries
+CREATE INDEX idx_sessions_created_at ON sessions(created_at DESC);
+
+
+================================================================================
+PHASE 3: BACKEND API ENDPOINTS (Day 3-5)
+================================================================================
+
+STEP 3.1 - Emotion Analysis Endpoint
+-------------------------------------
+File: app/api/analyze/route.ts
+
+Purpose: Takes journal text → returns emotion analysis + visual parameters
+
+Key Implementation Steps:
+1. Accept POST request with { journal_text: string }
+2. Call OpenAI API with specialized prompt:
+   
+   Prompt Template:
+   "You are an emotional analysis assistant. Analyze the following journal 
+   entry and extract:
+   - primary_emotion (anxiety, sadness, hope, anger, overwhelm, peace, etc.)
+   - intensity (0-10 scale)
+   - scene_metaphor (a symbolic scene like 'stormy ocean', 'dark tunnel')
+   - secondary_emotion (optional)
+   
+   Return as JSON only.
+   
+   Journal entry: {journal_text}"
+
+3. Parse LLM response
+4. Map emotions to visual parameters:
+   
+   Mapping Rules:
+   - Anxiety → cool_blue palette, low openness, tight camera
+   - Hope → warm_orange/yellow, high light, wide camera
+   - Sadness → neutral_gray, low light, medium openness
+   - Anger → red tones, high contrast, tight camera
+   - Peace → pastel/green, high light, wide open
+
+5. Return combined JSON:
+   {
+     emotion_analysis: { ... },
+     visual_params: { ... }
+   }
+
+STEP 3.2 - Image Generation Endpoint
+-------------------------------------
+File: app/api/generate/route.ts
+
+Purpose: Takes visual parameters → generates FIBO image
+
+Key Implementation Steps:
+1. Accept POST request with { visual_params: VisualParameters }
+2. Convert visual_params to FIBO's JSON schema:
+
+   Example FIBO JSON structure (adjust based on actual FIBO docs):
+   {
+     "prompt": visual_params.scene_metaphor,
+     "style": {
+       "color_palette": visual_params.color_palette,
+       "lighting": visual_params.light_level,
+       "mood": visual_params.emotion
+     },
+     "composition": {
+       "camera_distance": visual_params.camera_angle,
+       "openness": visual_params.openness,
+       "contrast": visual_params.contrast
+     },
+     "safe_mode": true  // No disturbing content
+   }
+
+3. Call FIBO API:
+   POST to FIBO_API_ENDPOINT with headers and JSON body
+   
+4. Handle response:
+   - Get image URL or base64
+   - Handle errors/timeouts gracefully
+   
+5. Return: { image_url: string, generation_id: string }
+
+STEP 3.3 - History Endpoint
+----------------------------
+File: app/api/history/route.ts
+
+Purpose: Fetch last N sessions from database
+
+Key Implementation Steps:
+1. Accept GET request (optional: ?limit=5)
+2. Query Supabase:
+   SELECT * FROM sessions 
+   ORDER BY created_at DESC 
+   LIMIT 5;
+   
+3. Return array of sessions
+
+
+================================================================================
+PHASE 4: FRONTEND UI COMPONENTS (Day 6-8)
+================================================================================
+
+STEP 4.1 - Landing Page (app/page.tsx)
+---------------------------------------
+Components to include:
+- Hero section explaining the concept
+- Prominent disclaimer box:
+  "⚠️ This is not therapy or crisis support. If you're in crisis, 
+   contact [National Suicide Prevention Lifeline: 988]"
+- "Start Session" CTA button → navigates to /session
+- Optional: How it works (3-step visual)
+
+Design Notes:
+- Use calming colors (blues, purples, soft greens)
+- Clean, minimal layout
+- Trustworthy typography (Inter, Outfit)
+
+STEP 4.2 - Session Page (app/session/page.tsx)
+-----------------------------------------------
+Layout:
+┌─────────────────────────────────────────────┐
+│  [Disclaimer bar at top]                    │
+├─────────────────────────────────────────────┤
+│  ┌───────────────────────────────────────┐  │
+│  │  Journal Entry (textarea)             │  │
+│  │                                       │  │
+│  └───────────────────────────────────────┘  │
+│  [Reflect Visually Button]                  │
+├─────────────────────────────────────────────┤
+│  Loading state / Generated Image            │
+│  Emotion Tags: [anxiety] [overwhelm]        │
+├─────────────────────────────────────────────┤
+│  Reframe Controls:                          │
+│  Hope Slider: [----●----]                   │
+│  Intensity Slider: [----●----]              │
+│  [Generate Reframed Image]                  │
+├─────────────────────────────────────────────┤
+│  Before/After Comparison (if reframed)      │
+└─────────────────────────────────────────────┘
+
+State Management:
+- journalText: string
+- emotionAnalysis: EmotionAnalysis | null
+- visualParams: VisualParameters | null
+- originalImageUrl: string | null
+- reframedImageUrl: string | null
+- hopeLevel: number (0-100)
+- intensityLevel: number (0-100)
+- isLoading: boolean
+
+Flow:
+1. User types journal entry
+2. Click "Reflect Visually"
+3. Call /api/analyze → get emotion + params
+4. Display emotion tags
+5. Call /api/generate → get original image
+6. Display image
+7. User adjusts sliders
+8. Click "Reframe" → modify params → call /api/generate again
+9. Display reframed image alongside original
+10. Save session to DB
+
+STEP 4.3 - Reframe Controls Component
+--------------------------------------
+File: components/ReframeControls.tsx
+
+Sliders to implement:
+1. Hope Slider (0-100)
+   - Affects: light_level, color_palette warmth, openness
+   - Low = dark, closed, cool colors
+   - High = bright, open, warm colors
+
+2. Intensity Slider (0-100)
+   - Affects: contrast, camera_angle
+   - Low = low contrast, distant camera (calmer)
+   - High = high contrast, tight camera (more intense)
+
+Implementation:
+- Use Radix UI Slider or HTML range input
+- On change, update state
+- Debounce updates (don't regenerate on every pixel change)
+- Show "Generate Reframed Image" button after slider change
+
+STEP 4.4 - History Page (app/history/page.tsx)
+-----------------------------------------------
+Layout:
+Grid of session cards (3 columns on desktop, 1 on mobile)
+
+Each card shows:
+- Thumbnail of generated image
+- Date (formatted nicely: "Nov 21, 2024")
+- Primary emotion tag
+- Intensity indicator (colored bar or dots)
+- Click → opens modal/detail view with:
+  - Full image
+  - Original journal text
+  - All emotion tags
+  - Option to "Continue Reframing"
+
+Data fetching:
+- Call /api/history on page load
+- Use React state to store sessions
+- Handle empty state: "No sessions yet. Start your first reflection!"
+
+STEP 4.5 - Safety Features
+---------------------------
+Crisis Detection:
+In /api/analyze, before sending to LLM, check for keywords:
+- "suicide", "kill myself", "end it all", "want to die", etc.
+
+If detected:
+- DO NOT generate image
+- Return special response:
+  {
+    crisis_detected: true,
+    message: "I'm not equipped for crisis support. Please reach out:",
+    resources: [
+      "National Suicide Prevention Lifeline: 988",
+      "Crisis Text Line: Text HOME to 741741",
+      "International: findahelpline.com"
+    ]
+  }
+
+Display this prominently in UI instead of image generation.
+
+
+================================================================================
+PHASE 5: TESTING & POLISH (Day 9-10)
+================================================================================
+
+STEP 5.1 - Create Test Cases
+-----------------------------
+Prepare 5 sample journal entries covering different emotions:
+
+1. Anxiety Test:
+   "I feel like I'm drowning in work and nothing is under control."
+   Expected: Dark/cool palette, tight camera, low openness
+
+2. Hope Test:
+   "Today felt lighter. I'm starting to see a path forward."
+   Expected: Warm palette, bright light, open scene
+
+3. Sadness Test:
+   "Everything feels gray and heavy. I just want to rest."
+   Expected: Muted colors, low light, medium openness
+
+4. Mixed Emotions Test:
+   "I'm excited about the opportunity but terrified of failing."
+   Expected: Balanced params, medium intensity
+
+5. Peace Test:
+   "Sitting by the window, watching the rain. Everything is okay."
+   Expected: Soft palette, medium-high light, wide open
+
+STEP 5.2 - UI/UX Polish
+------------------------
+1. Loading states:
+   - Skeleton loaders while waiting for API
+   - "Analyzing your emotions..." text
+   - "Generating your reflection..." text
+
+2. Error handling:
+   - API failures → friendly error messages
+   - Timeout handling (FIBO might be slow)
+   - Retry buttons
+
+3. Smooth transitions:
+   - Fade-in animations for images
+   - Smooth slider interactions
+   - Page transitions
+
+4. Responsive design:
+   - Test on mobile (Chrome DevTools)
+   - Adjust grid layouts for small screens
+   - Ensure text is readable
+
+5. Accessibility:
+   - Alt text for images
+   - Keyboard navigation for sliders
+   - ARIA labels for buttons
+
+STEP 5.3 - Performance Optimization
+------------------------------------
+1. Image optimization:
+   - Use Next.js Image component
+   - Lazy load images in history grid
+   - Compress thumbnails
+
+2. API response time:
+   - Set reasonable timeouts (30s for FIBO)
+   - Show progress indicators
+
+3. Caching:
+   - Cache emotion analysis if journal text unchanged
+   - Don't regenerate identical params
+
+
+================================================================================
+PHASE 6: DEMO PREPARATION (Day 11-12)
+================================================================================
+
+STEP 6.1 - Create Demo Script
+------------------------------
+3-Minute Demo Flow:
+
+[0:00-0:30] Introduction
+- "This is FIBO Emotion Studio, a visual journaling companion"
+- Show landing page
+- Explain: "It's not therapy, but a tool for emotional self-reflection"
+
+[0:30-1:30] Core Feature Demo
+- Navigate to /session
+- Type prepared journal entry (anxiety example)
+- Click "Reflect Visually"
+- Show emotion analysis appearing
+- Show FIBO-generated metaphorical image
+- Explain the visual symbolism
+
+[1:30-2:15] Reframing Demo
+- Adjust "Hope" slider from low to high
+- Explain: "This is like cognitive reframing in therapy"
+- Click "Generate Reframed Image"
+- Show before/after side-by-side
+- Point out: "Same situation, different perspective"
+
+[2:15-2:45] History & Impact
+- Navigate to /history
+- Show grid of past sessions
+- Explain: "Over time, users can see their emotional journey"
+- "Visual progress is more tangible than text alone"
+
+[2:45-3:00] FIBO Integration Highlight
+- "This uses FIBO's JSON-native control"
+- Show how sliders map to specific JSON parameters
+- "Each emotional dimension is a controllable visual parameter"
+- "This opens doors for therapeutic tools, coaching apps, wellness platforms"
+
+STEP 6.2 - Record Demo Video
+-----------------------------
+Tools needed:
+- Screen recording: OBS Studio (free) or Loom
+- Script: Write exact talking points
+- Practice: Run through 3-5 times before recording
+
+Tips:
+- Clear audio (use good mic or quiet room)
+- Smooth screen interactions (no cursor jitter)
+- Show real FIBO-generated images (not placeholders)
+- Keep energy up (you're excited about this!)
+
+STEP 6.3 - Prepare README
+--------------------------
+README.md should include:
+
+# FIBO Emotion Studio
+
+## What It Does
+[One paragraph explaining the concept]
+
+## Why It Matters
+- Challenge: Emotions are hard to visualize
+- Solution: AI-generated metaphorical imagery
+- Impact: Helps people practice cognitive reframing
+
+## How It Works
+[Simple architecture diagram or flowchart]
+Journal → LLM (emotion analysis) → JSON params → FIBO → Image
+
+## FIBO Integration
+- Uses JSON-controlled generation
+- Maps emotional parameters to visual parameters
+- Enables precise, reproducible reframing
+
+## Tech Stack
+[List your stack]
+
+## Running Locally
+```bash
+npm install
+cp .env.example .env.local
+# Add your API keys
+npm run dev
+```
+
+## Demo
+[Link to video]
+
+## Team
+[Your names and roles]
+
+## Safety Note
+This is not a substitute for professional mental health care.
+
+
+================================================================================
+TIMELINE
+================================================================================
+
+WEEK 1: FOUNDATION & CORE FLOW
+-------------------------------
+Day 1-2:   Project setup, folder structure, basic pages
+           → Deliverable: App runs locally, pages navigate
+
+Day 3-4:   Define data models, set up Supabase, API endpoint structure
+           → Deliverable: Database ready, API routes scaffolded
+
+Day 5-7:   Mock one complete flow (hardcoded emotion → placeholder image)
+           → Deliverable: Can click through entire UX with fake data
+
+WEEK 2: REAL AI INTEGRATION
+----------------------------
+Day 8-10:  Implement /api/analyze with real OpenAI integration
+           Map emotions to visual parameters
+           → Deliverable: Real emotion analysis working
+
+Day 11-12: Implement /api/generate with real FIBO integration
+           Display generated images in UI
+           → Deliverable: Real images generating from journal text
+
+Day 13-14: Build reframe controls, implement slider logic
+           Generate reframed images
+           → Deliverable: Full reframing flow works
+
+WEEK 3: HISTORY, SAFETY, POLISH
+--------------------------------
+Day 15-17: Database integration, save/load sessions
+           Build /history page UI
+           → Deliverable: Session history persists and displays
+
+Day 18-19: Implement crisis detection and safety features
+           Add disclaimers throughout app
+           → Deliverable: Safe, responsible tool
+
+Day 20-21: UI/UX polish, responsive design, error handling
+           → Deliverable: Production-ready MVP
+
+WEEK 4: DEMO & SUBMISSION
+---------------------------
+Day 22-24: Create demo script, test with sample entries
+           Fix any bugs found during practice
+           → Deliverable: Stable demo path
+
+Day 25-26: Write README, document FIBO integration
+           Explain architecture and parameter mapping
+           → Deliverable: Clear documentation
+
+Day 27-28: Record demo video, prepare submission materials
+           Final testing and deployment to Vercel
+           → Deliverable: Submitted to hackathon!
+
+
+================================================================================
+CRITICAL SUCCESS FACTORS
+================================================================================
+
+✓ MUST DO:
+----------
+1. Real FIBO integration (not just placeholder images)
+2. Clear JSON parameter mapping (emotion → visual controls)
+3. Working reframe functionality (sliders that actually change the image)
+4. Professional UI (not a toy, not MVPish-looking)
+5. Strong safety disclaimers (crisis detection + resources)
+6. 3-minute demo video that tells a compelling story
+
+✓ JUDGE-FRIENDLY HIGHLIGHTS:
+-----------------------------
+- Mental health is high-impact
+- Visual reframing is novel (not just another chatbot)
+- JSON-native control is exactly what FIBO wants to see
+- Clear path to real-world use (therapy apps, coaching, wellness)
+- Demonstrates understanding of controllable generation
+
+✓ AVOID:
+---------
+- Don't build full user auth (not needed for MVP)
+- Don't add 20 different reframe sliders (2-3 is enough)
+- Don't make therapy claims (you're not licensed)
+- Don't show disturbing imagery (keep it PG-13 symbolic)
+- Don't overcomplicate the demo (1 clear flow is better than 10 half-baked features)
+
+
+================================================================================
+RESOURCES & REFERENCES
+================================================================================
+
+Documentation to Review:
+- FIBO API docs (JSON schema for image generation)
+- OpenAI API docs (Chat Completions)
+- Supabase docs (Database, Storage)
+- Next.js 14 App Router docs
+
+Design Inspiration:
+- Calm app (meditation UI)
+- Daylio (mood tracking)
+- Headspace (wellness aesthetic)
+
+Crisis Resources to Include:
+- National Suicide Prevention Lifeline: 988 (US)
+- Crisis Text Line: Text HOME to 741741 (US)
+- International: findahelpline.com
+
+
+================================================================================
+FINAL CHECKLIST BEFORE SUBMISSION
+================================================================================
+
+□ Code runs without errors locally
+□ All API keys in .env.local (and .env.example created without real keys)
+□ Database schema matches code
+□ At least 3 test sessions work end-to-end
+□ Reframe sliders visibly change the generated image
+□ History page displays past sessions
+□ Crisis detection triggers safety message
+□ Disclaimers visible on landing and session pages
+□ README is complete and clear
+□ Demo video is <3 minutes and showcases key features
+□ Deployed to Vercel (or other host) with live URL
+□ Submission form filled out on Devpost/hackathon platform
+
+
+================================================================================
+END OF MVP IMPLEMENTATION PLAN
+================================================================================
+
+Good luck! You've got a genuinely interesting, judge-friendly project here.
+Focus on making the emotion → visual → reframe loop feel smooth and meaningful.
+
+Remember: This wins on novelty (visual reframing), impact (mental wellness),
+and technical execution (JSON-controlled generation). Nail those three and
+you're in great shape.
+
+Questions? Revisit this plan or reach out to your team.
+Now go build something beautiful! 🚀

@@ -1,0 +1,233 @@
+# Supabase Authentication Implementation Guide for EchoScape
+
+This guide outlines the steps to implement Supabase Authentication in the EchoScape project.
+
+## Prerequisites
+
+1.  **Supabase Project**: Ensure you have a Supabase project created.
+2.  **Environment Variables**: You will need your `SUPABASE_URL` and `SUPABASE_ANON_KEY`.
+
+---
+
+## Part 1: Supabase Dashboard Configuration
+
+1.  **Enable Auth Providers**:
+    *   Go to **Authentication** > **Providers**.
+    *   Enable **Email** (and ensure "Confirm email" is disabled for easier testing if desired).
+
+2.  **Database Schema**:
+    *   Your `users` table is already defined in `supabase_setup.sql`. 
+         Supabase Auth automatically manages users in its own `auth.users` table.
+
+    *   **Crucial**: You should link your public `users` table to `auth.users` using a trigger if you want to store extra user profile data, OR just rely on `auth.users` for basic auth.
+        
+        To automatically create a user in your public `users` table when a new user signs up via Supabase Auth, run this SQL in your Supabase SQL Editor:
+
+        ```sql
+        -- 1. Create a function that handles the new user insertion
+        CREATE OR REPLACE FUNCTION public.handle_new_user()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            INSERT INTO public.users (id, email)
+            VALUES (new.id, new.email);
+            RETURN new;
+        END;
+        $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+        -- 2. Create the trigger to call this function on auth.users insert
+        CREATE OR REPLACE TRIGGER on_auth_user_created
+            AFTER INSERT ON auth.users
+            FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+        ```
+
+    *   Update RLS policies in `supabase_setup.sql`:
+        ```sql
+        -- Remove "Enable all access" policies
+        DROP POLICY IF EXISTS "Enable all access for now" ON sessions;
+        
+        -- Add restrictive policy
+        CREATE POLICY "Users can only see their own sessions" 
+        ON sessions 
+        FOR ALL 
+        USING (auth.uid() = user_id);
+        ```
+
+---
+
+## Part 2: Frontend Implementation (fibo-emotion-studio)
+
+### 1. Install Dependencies
+Since you are using Next.js 16 (App Router), use `@supabase/ssr`.
+```bash
+npm install @supabase/supabase-js @supabase/ssr
+```
+
+### 2. Environment Variables
+Add to `.env.local`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 3. Create Supabase Clients
+Create a new folder `src/utils/supabase`.
+
+**`src/utils/supabase/client.ts`** (Browser Client):
+```typescript
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+```
+
+**`src/utils/supabase/server.ts`** (Server Client - for Server Components/Actions):
+```typescript
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+export async function createClient() {
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  )
+}
+```
+
+### 4. Create Auth Store (Zustand)
+Create `src/store/useAuthStore.ts` to manage user state globally.
+```typescript
+import { create } from 'zustand';
+import { User } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/client';
+
+interface AuthState {
+    user: User | null;
+    setUser: (user: User | null) => void;
+    signOut: () => Promise<void>;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+    user: null,
+    setUser: (user) => set({ user }),
+    signOut: async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        set({ user: null });
+    },
+}));
+```
+
+### 5. Update API Client (`src/lib/api.ts`)
+Modify `api.ts` to attach the access token to every request.
+
+```typescript
+import { createClient } from '@/utils/supabase/client';
+
+// ... inside your api setup
+api.interceptors.request.use(async (config) => {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+    return config;
+});
+```
+
+### 6. Create Auth Components
+*   Create `src/app/login/page.tsx` with a form for Email/Password.
+*   Use `supabase.auth.signInWithPassword({ email, password })`.
+
+---
+
+## Part 3: Backend Implementation (backend)
+
+### 1. Auth Middleware
+Create `src/middleware/auth.middleware.ts`.
+
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY! // Use Service Key for admin tasks, or Anon for verification
+);
+
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader) {
+        return res.status(401).json({ error: 'No authorization header' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (error || !user) {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+
+    // Attach user to request
+    (req as any).user = user;
+    next();
+};
+```
+
+### 2. Protect Routes
+Apply the middleware to your routes in `src/routes/session.routes.ts`.
+
+```typescript
+import { requireAuth } from '../middleware/auth.middleware';
+
+router.post('/start', requireAuth, sessionController.startSession);
+// ... apply to other protected routes
+```
+
+### 3. Update Controllers
+Update `startSession` to use the authenticated user's ID.
+
+```typescript
+// In conversation.controller.ts
+export const startSession = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id; // Get from auth middleware
+    
+    // Create session linked to this userId
+    // ...
+}
+```
+
+---
+
+## Summary of Flow
+1.  User logs in on Frontend -> Supabase returns Session (Access Token).
+2.  Frontend stores Session (handled by `@supabase/ssr` cookies + Zustand).
+3.  Frontend makes API call -> Interceptor adds `Authorization: Bearer <token>`.
+4.  Backend Middleware intercepts -> Verifies token with Supabase.
+5.  Backend extracts `user_id` -> Performs DB action for that specific user.

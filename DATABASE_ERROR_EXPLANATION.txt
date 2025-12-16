@@ -1,0 +1,129 @@
+# DATABASE ERROR: NULL VALUE CONSTRAINT VIOLATION
+
+## Error Message
+```
+null value in column "journal_text" of relation "sessions" violates not-null constraint
+```
+
+## What Happened
+
+When you tried to create a new session, the backend attempted to insert a new row into the `sessions` table in your Supabase database. However, the database rejected this operation because:
+
+1. The `journal_text` column has a NOT NULL constraint
+2. The backend tried to create a session without providing a value for `journal_text`
+3. PostgreSQL (Supabase's database) rejected the insert because NULL values are not allowed
+
+## Why This Happened
+
+### Root Cause
+The database schema was set up with `journal_text` as a required field (NOT NULL), but in the EchoScape application flow:
+
+1. Sessions are created FIRST (when user starts chatting)
+2. The journal text is populated LATER (after conversation happens)
+3. This means `journal_text` should be OPTIONAL (nullable) at session creation time
+
+### The Mismatch
+- **Database expects**: `journal_text` must have a value immediately
+- **Application behavior**: `journal_text` is filled in later during the conversation
+- **Result**: Database rejects the session creation
+
+## Your Current Table Structure
+
+Based on your Supabase query results, your `sessions` table has:
+
+| Column Name    | Data Type                | Is Nullable |
+|----------------|--------------------------|-------------|
+| id             | uuid                     | NO          |
+| created_at     | timestamp with time zone | YES         |
+| user_id        | uuid                     | NO          |
+| updated_at     | timestamp with time zone | YES         |
+| journal_text   | text                     | NO ❌       |
+| emotion_data   | jsonb                    | NO          |
+
+The problem: `journal_text` is marked as `NO` (NOT NULL), but it should be `YES` (nullable).
+
+## Solution
+
+### Step 1: Fix the Database Schema
+
+Run this SQL in your Supabase SQL Editor:
+
+```sql
+ALTER TABLE sessions ALTER COLUMN journal_text DROP NOT NULL;
+```
+
+This will change the constraint so `journal_text` can be NULL when a session is first created.
+
+### Step 2: Verify the Fix
+
+After running the SQL, verify it worked by running:
+
+```sql
+SELECT column_name, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'sessions' AND column_name = 'journal_text';
+```
+
+You should see `is_nullable = YES`
+
+### Step 3: Test Your Application
+
+1. Refresh your browser at `http://localhost:3000`
+2. Make sure you're logged in
+3. Try sending a message in the chat
+4. The session should now be created successfully
+
+## Expected Backend Logs After Fix
+
+You should see in your backend terminal:
+
+```
+[Auth Middleware] Auth successful for: ysujaana2004@gmail.com
+[Session Controller] Creating session for user: ysujaana2004@gmail.com
+[Session Controller] Session created: <uuid>
+POST /api/session/start 201
+```
+
+No more 500 errors!
+
+## Why NOT to Run the Other SQL Commands
+
+You may have seen this SQL earlier:
+
+```sql
+ALTER TABLE sessions ALTER COLUMN journal_text DROP NOT NULL;
+ALTER TABLE sessions ALTER COLUMN summary DROP NOT NULL;
+ALTER TABLE sessions ALTER COLUMN metaphor DROP NOT NULL;
+ALTER TABLE sessions ALTER COLUMN primary_emotion DROP NOT NULL;
+```
+
+**DO NOT RUN THIS!** 
+
+The columns `summary`, `metaphor`, and `primary_emotion` don't exist in your current table. Running this will cause errors like:
+
+```
+ERROR: 42703: column "summary" of relation "sessions" does not exist
+```
+
+Only run the first line for `journal_text`.
+
+## Additional Context: The 500 Error in Browser
+
+The browser shows:
+```
+Failed to load resource: the server responded with a status of 500 (Internal Server Error)
+:4000/api/session/start:1
+```
+
+This is the frontend's way of saying "the backend crashed while trying to create a session." The 500 error is a generic server error. The actual detailed error is in the backend terminal, which shows the database constraint violation.
+
+## Summary
+
+1. **Problem**: Database requires `journal_text` to have a value, but app creates sessions without it initially
+2. **Fix**: Make `journal_text` nullable in the database
+3. **SQL**: `ALTER TABLE sessions ALTER COLUMN journal_text DROP NOT NULL;`
+4. **Result**: Sessions can be created without `journal_text`, which gets filled in later
+
+---
+
+Generated: December 15, 2024

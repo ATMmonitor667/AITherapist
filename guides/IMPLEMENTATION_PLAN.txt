@@ -1,0 +1,2043 @@
+================================================================================
+ECHOSCAPE - AI REFLECTION & VISUAL COMPANION
+COMPREHENSIVE IMPLEMENTATION PLAN
+================================================================================
+
+Version: 1.0
+Date: 2025-12-06
+Status: Architecture & Implementation Guide
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+1. PRODUCT OVERVIEW & POSITIONING
+2. SYSTEM ARCHITECTURE
+3. TECH STACK SELECTION & RATIONALE
+4. DATA MODELS & SCHEMA
+5. API DESIGN & ENDPOINTS b 
+6. ML/AI COMPONENTS
+7. FIBO INTEGRATION STRATEGY
+8. FRONTEND ARCHITECTURE
+9. IMPLEMENTATION PHASES (PIECE BY PIECE)
+10. SAFETY & COMPLIANCE
+11. DEPLOYMENT STRATEGY
+12. TESTING STRATEGY
+
+================================================================================
+1. PRODUCT OVERVIEW & POSITIONING
+================================================================================
+
+1.1 PRODUCT NAME & BRANDING
+---------------------------
+Name: EchoScape
+Tagline: "Visualize Your Inner World"
+Positioning: AI-Powered Reflection & Visual Journaling Companion
+
+Key Messaging:
+- "Not therapy, but a guided reflection tool"
+- "Transform conversations into visual landscapes"
+- "See your emotional journey in 3D space"
+- "Reframe perspectives through interactive visuals"
+
+1.2 CORE VALUE PROPOSITION
+---------------------------
+Problem Statement:
+- Emotions are abstract and hard to visualize
+- People struggle to track emotional patterns over time
+- Traditional journaling lacks visual feedback
+- Therapy is expensive and not always accessible
+
+Solution:
+- Conversational AI coach for guided reflection
+- Real-time emotion tracking and visualization
+- FIBO-generated visual metaphors for each session
+- Interactive reframing through visual manipulation
+- 3D history visualization for pattern recognition
+
+1.3 USER JOURNEY (DETAILED)
+----------------------------
+Step 1: Onboarding (5 minutes)
+- Landing page with clear value proposition
+- Safety disclaimer prominently displayed
+- Optional account creation (can start anonymous)
+- Brief tutorial: "How EchoScape works"
+
+Step 2: Start Session (1 minute)
+- Click "Start New Reflection"
+- Choose: Text chat or Voice (transcription)
+- System creates session record in database
+
+Step 3: Conversation Phase (10-15 minutes)
+- Multi-turn dialogue with AI coach
+- AI asks reflective questions:
+  * "What's on your mind today?"
+  * "How does that make you feel?"
+  * "Can you tell me more about that?"
+  * "What would a more hopeful perspective look like?"
+- Real-time emotion tracking (background)
+- User can end conversation anytime
+
+Step 4: Session Summary (30 seconds)
+- AI generates summary:
+  * Key themes identified
+  * Emotion vector (anxiety: 0.7, hope: 0.3, etc.)
+  * Cognitive patterns detected
+  * Metaphor generated ("walking through a tunnel")
+
+Step 5: Visual Generation (10-20 seconds)
+- System maps emotions to FIBO JSON parameters
+- Calls FIBO API to generate base image
+- Image appears with caption: "This is your emotional landscape"
+
+Step 6: Interactive Reframing (5-10 minutes)
+- User sees sliders:
+  * Hope Level (0-100)
+  * Intensity (0-100)
+  * Openness (0-100)
+  * Warmth (0-100)
+- As user adjusts, system:
+  * Updates JSON parameters
+  * Regenerates image via FIBO
+  * Shows before/after comparison
+- User can save multiple reframed versions
+
+Step 7: Save & View in History
+- Session saved to database
+- Appears in 3D history view
+- User can return to any session later
+
+1.4 TARGET USERS
+----------------
+Primary:
+- Adults 18-35 seeking self-reflection tools
+- People interested in mindfulness and emotional awareness
+- Creative individuals who respond to visual stimuli
+- Users comfortable with technology
+
+Secondary:
+- Mental health professionals (as a supplementary tool)
+- Students dealing with stress and anxiety
+- Remote workers managing work-life balance
+
+1.5 COMPETITIVE DIFFERENTIATION
+-------------------------------
+vs. Traditional Journaling Apps:
+- Visual output (not just text)
+- AI-guided conversation (not just blank page)
+- 3D history visualization
+
+vs. Therapy Apps:
+- Not clinical, no diagnosis
+- Lower barrier to entry
+- Visual and interactive
+
+vs. Mood Tracking Apps:
+- Deeper conversation, not just check-ins
+- Visual metaphors, not just charts
+- Reframing exercises built-in
+
+================================================================================
+2. SYSTEM ARCHITECTURE
+================================================================================
+
+2.1 HIGH-LEVEL ARCHITECTURE
+---------------------------
+┌─────────────────────────────────────────────────────────────────┐
+│                         CLIENT LAYER                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │  Next.js UI │  │  Three.js 3D │  │  React State │           │
+│  │  Components │  │   Visualizer │  │   Management │           │
+│  └──────────────┘  └──────────────┘  └──────────────┘           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ HTTP/REST
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      API GATEWAY / BFF                            │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │         Next.js API Routes (Route Handlers)              │   │
+│  │  - Authentication & Authorization                        │   │
+│  │  - Request Validation                                    │   │
+│  │  - Rate Limiting                                         │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│ Conversation │    │ ML Analytics │    │ FIBO Visual  │
+│   Service    │    │   Service    │    │   Service    │
+└──────────────┘    └──────────────┘    └──────────────┘
+        │                     │                     │
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  Data Layer      │
+                    │  - Supabase/     │
+                    │    PostgreSQL    │
+                    │  - File Storage   │
+                    │    (S3/R2)       │
+                    └──────────────────┘
+
+2.2 COMPONENT BREAKDOWN
+-----------------------
+A. Client Application (Frontend)
+   - Next.js 15 App Router
+   - React 19 with Server Components
+   - Three.js via react-three-fiber
+   - State management (Zustand or Context API)
+   - Real-time updates (WebSockets or polling)
+
+B. API Gateway / Backend for Frontend (BFF)
+   - Next.js API Routes
+   - Request validation (Zod)
+   - Authentication middleware
+   - Error handling & logging
+
+C. Conversation Service
+   - LLM orchestration (Gemini/OpenAI)
+   - Conversation state management
+   - Prompt engineering & safety checks
+   - Session management
+
+D. ML Analytics Service
+   - Emotion classification model
+   - Cognitive pattern detection
+   - Emotion vector aggregation
+   - FIBO parameter mapping
+
+E. FIBO Visual Service
+   - JSON parameter builder
+   - FIBO API integration
+   - Image generation & caching
+   - Reframing logic
+
+F. Data Layer
+   - PostgreSQL (via Supabase)
+   - File storage (images)
+   - Caching layer (Redis optional)
+
+2.3 DATA FLOW DIAGRAMS
+----------------------
+
+Flow 1: Starting a New Session
+User → Frontend → POST /api/session/start
+                → Create session record
+                → Return session_id
+                → Frontend navigates to chat view
+
+Flow 2: Sending a Message
+User types → Frontend → POST /api/session/:id/message
+                      → Save user message to DB
+                      → Send to Conversation Service
+                      → LLM generates response
+                      → Save AI response to DB
+                      → Parallel: Send to ML Analytics
+                      → Return response to frontend
+                      → Display in chat UI
+
+Flow 3: Ending Session & Generating Summary
+User clicks "End Session" → Frontend → POST /api/session/:id/summary
+                                      → Conversation Service: Generate summary
+                                      → ML Analytics: Aggregate emotions
+                                      → Save summary to DB
+                                      → Return summary data
+                                      → Frontend triggers visual generation
+
+Flow 4: Generating Visual
+Summary ready → Frontend → POST /api/visual/generate
+                          → ML Analytics: Map emotions to FIBO params
+                          → FIBO Service: Build JSON prompt
+                          → Call FIBO API
+                          → Store image URL
+                          → Return image to frontend
+                          → Display in UI
+
+Flow 5: Reframing Visual
+User adjusts slider → Frontend → POST /api/visual/update
+                                    → Load current FIBO JSON
+                                    → Apply delta adjustments
+                                    → Call FIBO API with new params
+                                    → Store reframed image
+                                    → Return to frontend
+                                    → Update UI with new image
+
+2.4 SCALABILITY CONSIDERATIONS
+-------------------------------
+Horizontal Scaling:
+- Stateless API services (can run multiple instances)
+- Database connection pooling
+- CDN for static assets and generated images
+- Load balancer for API routes
+
+Caching Strategy:
+- Session data: Redis (TTL: 1 hour)
+- Generated images: CDN cache (TTL: 30 days)
+- LLM responses: Not cached (too dynamic)
+- Emotion vectors: In-memory during session
+
+Performance Targets:
+- API response time: < 500ms (non-LLM endpoints)
+- LLM response time: < 5 seconds
+- FIBO image generation: < 20 seconds
+- Page load: < 2 seconds
+
+================================================================================
+3. TECH STACK SELECTION & RATIONALE
+================================================================================
+
+3.1 FRONTEND STACK
+------------------
+Framework: Next.js 15
+Rationale:
+- Server Components for better performance
+- Built-in API routes (no separate backend needed initially)
+- Excellent TypeScript support
+- Great developer experience
+- Easy deployment (Vercel)
+
+UI Library: React 19
+Rationale:
+- Latest features (Server Components, Actions)
+- Strong ecosystem
+- Good performance
+
+3D Graphics: react-three-fiber + drei
+Rationale:
+- Declarative Three.js wrapper
+- React-friendly API
+- Good performance
+- Active community
+- drei provides useful helpers
+
+State Management: Zustand
+Rationale:
+- Lightweight (no boilerplate)
+- TypeScript-friendly
+- Good for medium complexity apps
+- Alternative: Context API if simpler needed
+
+Styling: Tailwind CSS + shadcn/ui
+Rationale:
+- Utility-first CSS (fast development)
+- shadcn/ui provides accessible components
+- Easy customization
+- Good for rapid prototyping
+
+Forms: React Hook Form + Zod
+Rationale:
+- Performance (uncontrolled components)
+- Built-in validation
+- TypeScript integration
+
+3.2 BACKEND STACK
+-----------------
+Runtime: Node.js 20+ (via Next.js)
+Rationale:
+- Same language as frontend (easier dev)
+- Next.js API routes handle most needs
+- Good async/await support
+
+Language: TypeScript
+Rationale:
+- Type safety
+- Better IDE support
+- Catches errors early
+- Industry standard
+
+API Framework: Next.js API Routes
+Rationale:
+- No separate server needed
+- Easy deployment
+- Good for MVP
+- Can migrate to Express/Fastify later if needed
+
+Validation: Zod
+Rationale:
+- TypeScript-first
+- Runtime validation
+- Type inference
+- Great error messages
+
+3.3 DATABASE
+------------
+Primary: PostgreSQL (via Supabase)
+Rationale:
+- Relational data (sessions, messages, users)
+- JSONB support (for flexible emotion vectors)
+- Good performance
+- Supabase provides:
+  * Auth (if needed)
+  * Real-time subscriptions (optional)
+  * Storage for images
+  * Easy setup
+
+Alternative: Plain PostgreSQL + Prisma
+- If you want more control
+- Prisma provides excellent TypeScript types
+
+3.4 AI/ML SERVICES
+------------------
+LLM Provider: Google Gemini 1.5 Flash
+Rationale:
+- Free tier available
+- Good performance
+- JSON mode support
+- Fast responses
+- Alternative: OpenAI GPT-4o (better but costs money)
+
+ML Framework: Python + PyTorch (for custom models)
+Rationale:
+- Industry standard for ML
+- Good libraries (transformers, scikit-learn)
+- Can run as microservice or serverless
+
+Emotion Classification: Hugging Face Transformers
+Rationale:
+- Pre-trained models available
+- Easy to fine-tune
+- Good performance out of the box
+- Models like:
+  * j-hartmann/emotion-english-distilroberta-base
+  * cardiffnlp/twitter-roberta-base-emotion
+
+3.5 IMAGE GENERATION
+--------------------
+Service: FIBO via fal.ai or DeepInfra
+Rationale:
+- JSON-native control (perfect for our use case)
+- Good quality
+- Reasonable pricing
+- API-based (no infrastructure needed)
+
+Alternative: Direct Bria API
+- If you have access
+- More control
+- Potentially better pricing
+
+3.6 DEPLOYMENT & INFRASTRUCTURE
+--------------------------------
+Frontend + API: Vercel
+Rationale:
+- Zero-config Next.js deployment
+- Automatic scaling
+- Edge functions
+- Free tier for MVP
+
+Database: Supabase Cloud
+Rationale:
+- Managed PostgreSQL
+- Free tier available
+- Easy backups
+- Good performance
+
+ML Service: Railway or Render
+Rationale:
+- Easy Python deployment
+- Docker support
+- Reasonable pricing
+- Alternative: AWS Lambda (serverless)
+
+Image Storage: Supabase Storage or Cloudflare R2
+Rationale:
+- CDN included
+- Good performance
+- Reasonable pricing
+- Alternative: AWS S3
+
+3.7 MONITORING & LOGGING
+------------------------
+Logging: Pino (Node.js) or structlog (Python)
+Rationale:
+- Structured logging
+- Good performance
+- Easy to parse
+
+Monitoring: Vercel Analytics + Sentry
+Rationale:
+- Vercel: Built-in for Next.js
+- Sentry: Error tracking
+- Free tiers available
+
+Analytics: PostHog or Plausible
+Rationale:
+- Privacy-friendly
+- Good for product analytics
+- Free tiers
+
+================================================================================
+4. DATA MODELS & SCHEMA
+================================================================================
+
+4.1 DATABASE SCHEMA (PostgreSQL)
+---------------------------------
+
+-- Users table (optional, can start anonymous)
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    preferences JSONB DEFAULT '{}'::jsonb
+);
+
+-- Sessions table
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    started_at TIMESTAMP DEFAULT NOW(),
+    ended_at TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'active', -- 'active', 'completed', 'abandoned'
+
+    -- Summary data (populated after session ends)
+    summary TEXT,
+    themes TEXT[], -- Array of theme strings
+    primary_emotion VARCHAR(50),
+    emotion_vector JSONB, -- {"anxiety": 0.7, "hope": 0.3, ...}
+    cognitive_patterns TEXT[], -- ["catastrophizing", "all-or-nothing"]
+    metaphor TEXT, -- Generated metaphor string
+
+    -- Metadata
+    message_count INTEGER DEFAULT 0,
+    duration_seconds INTEGER,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Messages table (conversation history)
+CREATE TABLE messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+    role VARCHAR(20) NOT NULL, -- 'user' or 'assistant'
+    text TEXT NOT NULL,
+    timestamp TIMESTAMP DEFAULT NOW(),
+
+    -- Optional: emotion data for this specific message
+    emotion_snapshot JSONB,
+
+    -- Ordering
+    sequence_number INTEGER NOT NULL,
+
+    CONSTRAINT valid_role CHECK (role IN ('user', 'assistant'))
+);
+
+-- Analytics table (detailed emotion tracking)
+CREATE TABLE analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+
+    -- Emotion vector (aggregated from messages)
+    emotion_vector JSONB NOT NULL,
+
+    -- Pattern detection
+    cognitive_patterns TEXT[],
+    pattern_scores JSONB, -- Confidence scores for each pattern
+
+    -- Temporal data (if tracking over time)
+    analyzed_at TIMESTAMP DEFAULT NOW(),
+
+    -- Metadata
+    message_count INTEGER,
+    analysis_version VARCHAR(20) DEFAULT '1.0' -- For model versioning
+);
+
+-- Visuals table (FIBO-generated images)
+CREATE TABLE visuals (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+
+    -- Image data
+    image_url TEXT NOT NULL,
+    image_type VARCHAR(50) DEFAULT 'base', -- 'base', 'reframed', 'variant'
+    variant_name VARCHAR(100), -- Optional: "hopeful", "calm", etc.
+
+    -- FIBO parameters (the JSON that generated this image)
+    fibo_json JSONB NOT NULL,
+
+    -- Visual parameters (our internal representation)
+    visual_params JSONB NOT NULL, -- {light: 0.5, openness: 0.3, ...}
+
+    -- Metadata
+    generated_at TIMESTAMP DEFAULT NOW(),
+    generation_time_ms INTEGER,
+    api_provider VARCHAR(50) -- 'fal.ai', 'deepinfra', 'bria'
+);
+
+-- Reframing history (track user interactions)
+CREATE TABLE reframing_actions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+    base_visual_id UUID REFERENCES visuals(id),
+    reframed_visual_id UUID REFERENCES visuals(id),
+
+    -- What changed
+    parameter_deltas JSONB, -- {"hope": +0.3, "light": +0.2}
+
+    -- User interaction
+    user_id UUID REFERENCES users(id),
+    action_timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Crisis logs (safety tracking)
+CREATE TABLE crisis_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES sessions(id),
+    user_id UUID REFERENCES users(id),
+
+    -- Detection data
+    trigger_text TEXT,
+    detected_keywords TEXT[],
+    risk_score DECIMAL(3,2), -- 0.00 to 1.00
+    needs_escalation BOOLEAN DEFAULT FALSE,
+
+    -- Response
+    resources_shown BOOLEAN DEFAULT FALSE,
+    resources_shown_at TIMESTAMP,
+
+    -- Metadata
+    detected_at TIMESTAMP DEFAULT NOW(),
+    handled BOOLEAN DEFAULT FALSE
+);
+
+4.2 JSONB SCHEMA EXAMPLES
+--------------------------
+
+emotion_vector (in sessions.emotion_vector):
+{
+  "anxiety": 0.7,
+  "sadness": 0.3,
+  "hope": 0.4,
+  "anger": 0.1,
+  "joy": 0.2,
+  "fear": 0.5,
+  "calm": 0.3,
+  "overwhelm": 0.6
+}
+
+visual_params (in visuals.visual_params):
+{
+  "light_level": 0.4,
+  "openness": 0.3,
+  "warmth": 0.2,
+  "intensity": 0.7,
+  "contrast": 0.6,
+  "camera_distance": 0.5,
+  "color_temperature": 0.3
+}
+
+fibo_json (in visuals.fibo_json):
+{
+  "prompt": "A narrow tunnel with dim light at the end, representing anxiety and hope",
+  "camera": {
+    "distance": 0.5,
+    "fov": 60,
+    "angle": "medium"
+  },
+  "lighting": {
+    "intensity": 0.4,
+    "direction": "forward",
+    "color": "cool_blue"
+  },
+  "palette": {
+    "mood": "cool_muted",
+    "temperature": 0.3
+  },
+  "composition": {
+    "tension": 0.7,
+    "openness": 0.3
+  },
+  "style": "cinematic_emotional"
+}
+
+4.3 INDEXES FOR PERFORMANCE
+----------------------------
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_created_at ON sessions(created_at DESC);
+CREATE INDEX idx_messages_session_id ON messages(session_id);
+CREATE INDEX idx_messages_sequence ON messages(session_id, sequence_number);
+CREATE INDEX idx_visuals_session_id ON visuals(session_id);
+CREATE INDEX idx_analytics_session_id ON analytics(session_id);
+CREATE INDEX idx_sessions_status ON sessions(status) WHERE status = 'completed';
+
+4.4 DATA RELATIONSHIPS
+----------------------
+users (1) ──< (many) sessions
+sessions (1) ──< (many) messages
+sessions (1) ──< (1) analytics
+sessions (1) ──< (many) visuals
+visuals (1) ──< (many) reframing_actions
+sessions (1) ──< (0 or 1) crisis_logs
+
+================================================================================
+5. API DESIGN & ENDPOINTS
+================================================================================
+
+5.1 API CONVENTIONS
+-------------------
+Base URL: /api/v1 (versioned for future changes)
+Authentication: Bearer token (JWT) - optional for MVP
+Response Format: JSON
+Error Format: { error: { code: string, message: string, details?: any } }
+
+5.2 SESSION MANAGEMENT ENDPOINTS
+----------------------------------
+
+POST /api/v1/session/start
+Description: Create a new reflection session
+Request Body:
+{
+  "user_id": "uuid" (optional, can be null for anonymous)
+}
+Response:
+{
+  "session_id": "uuid",
+  "started_at": "2025-12-06T10:00:00Z",
+  "status": "active"
+}
+Status Codes: 201 Created, 400 Bad Request, 500 Server Error
+
+GET /api/v1/session/:id
+Description: Get session details
+Response:
+{
+  "session_id": "uuid",
+  "status": "active" | "completed" | "abandoned",
+  "started_at": "2025-12-06T10:00:00Z",
+  "ended_at": null,
+  "message_count": 5,
+  "summary": null, // null if not completed
+  "emotion_vector": null, // null if not analyzed
+  ...
+}
+Status Codes: 200 OK, 404 Not Found
+
+POST /api/v1/session/:id/end
+Description: Mark session as completed and trigger summary generation
+Request Body: (empty or optional metadata)
+Response:
+{
+  "session_id": "uuid",
+  "status": "completed",
+  "summary": { ... }, // Generated summary
+  "ended_at": "2025-12-06T10:15:00Z"
+}
+Status Codes: 200 OK, 404 Not Found, 500 Server Error
+Note: This is async - summary generation may take a few seconds
+
+DELETE /api/v1/session/:id
+Description: Delete a session (soft delete or hard delete)
+Status Codes: 204 No Content, 404 Not Found
+
+5.3 MESSAGING ENDPOINTS
+-----------------------
+
+POST /api/v1/session/:id/message
+Description: Send a message in the conversation
+Request Body:
+{
+  "role": "user",
+  "text": "I've been feeling really overwhelmed lately..."
+}
+Response:
+{
+  "message_id": "uuid",
+  "role": "user",
+  "text": "...",
+  "timestamp": "2025-12-06T10:01:00Z",
+  "sequence_number": 1
+}
+Status Codes: 201 Created, 400 Bad Request, 404 Not Found
+
+GET /api/v1/session/:id/messages
+Description: Get all messages for a session
+Query Params:
+  - limit: number (default: 100)
+  - offset: number (default: 0)
+Response:
+{
+  "messages": [
+    {
+      "id": "uuid",
+      "role": "user" | "assistant",
+      "text": "...",
+      "timestamp": "...",
+      "sequence_number": 1
+    },
+    ...
+  ],
+  "total": 10,
+  "limit": 100,
+  "offset": 0
+}
+Status Codes: 200 OK, 404 Not Found
+
+POST /api/v1/session/:id/message/stream (Advanced)
+Description: Stream AI response (Server-Sent Events)
+Response: text/event-stream
+Status Codes: 200 OK, 404 Not Found
+Note: For real-time streaming of LLM responses
+
+5.4 ANALYTICS ENDPOINTS
+-----------------------
+
+GET /api/v1/session/:id/analytics
+Description: Get emotion analytics for a session
+Response:
+{
+  "session_id": "uuid",
+  "emotion_vector": {
+    "anxiety": 0.7,
+    "hope": 0.4,
+    ...
+  },
+  "cognitive_patterns": ["catastrophizing", "all-or-nothing"],
+  "pattern_scores": {
+    "catastrophizing": 0.8,
+    "all-or-nothing": 0.6
+  },
+  "analyzed_at": "2025-12-06T10:15:00Z"
+}
+Status Codes: 200 OK, 404 Not Found, 202 Accepted (if still processing)
+
+POST /api/v1/session/:id/analyze
+Description: Trigger analysis (if not done automatically)
+Response: Same as GET /analytics
+Status Codes: 200 OK, 202 Accepted (async processing)
+
+5.5 VISUAL GENERATION ENDPOINTS
+--------------------------------
+
+POST /api/v1/visual/generate
+Description: Generate base visual for a session
+Request Body:
+{
+  "session_id": "uuid",
+  "style": "cinematic_emotional" (optional)
+}
+Response:
+{
+  "visual_id": "uuid",
+  "session_id": "uuid",
+  "image_url": "https://...",
+  "image_type": "base",
+  "visual_params": { ... },
+  "fibo_json": { ... },
+  "generated_at": "2025-12-06T10:16:00Z"
+}
+Status Codes: 201 Created, 400 Bad Request, 404 Not Found, 202 Accepted (if async)
+
+GET /api/v1/visual/:id
+Description: Get visual details
+Response: Same structure as POST response
+Status Codes: 200 OK, 404 Not Found
+
+POST /api/v1/visual/update
+Description: Generate reframed version
+Request Body:
+{
+  "session_id": "uuid",
+  "base_visual_id": "uuid" (optional, uses latest if not provided),
+  "parameter_deltas": {
+    "hope": 0.3,      // Increase hope by 0.3
+    "light": 0.2,    // Increase light by 0.2
+    "openness": 0.4,  // Increase openness by 0.4
+    "warmth": 0.1    // Increase warmth by 0.1
+  },
+  "variant_name": "hopeful" (optional)
+}
+Response:
+{
+  "visual_id": "uuid",
+  "session_id": "uuid",
+  "image_url": "https://...",
+  "image_type": "reframed",
+  "variant_name": "hopeful",
+  "visual_params": { ... }, // Updated params
+  "fibo_json": { ... },
+  "parameter_deltas": { ... },
+  "generated_at": "2025-12-06T10:17:00Z"
+}
+Status Codes: 201 Created, 400 Bad Request, 404 Not Found
+
+GET /api/v1/session/:id/visuals
+Description: Get all visuals for a session
+Response:
+{
+  "visuals": [
+    { ... }, // Base visual
+    { ... }, // Reframed variants
+    ...
+  ],
+  "total": 3
+}
+Status Codes: 200 OK, 404 Not Found
+
+5.6 HISTORY ENDPOINTS
+---------------------
+
+GET /api/v1/history
+Description: Get user's session history
+Query Params:
+  - user_id: uuid (optional, uses auth token if not provided)
+  - limit: number (default: 10, max: 50)
+  - offset: number (default: 0)
+  - status: "completed" | "active" | "all" (default: "completed")
+Response:
+{
+  "sessions": [
+    {
+      "id": "uuid",
+      "started_at": "2025-12-06T10:00:00Z",
+      "ended_at": "2025-12-06T10:15:00Z",
+      "summary": "...",
+      "primary_emotion": "anxiety",
+      "emotion_vector": { ... },
+      "thumbnail_url": "https://...", // First visual image
+      "message_count": 15
+    },
+    ...
+  ],
+  "total": 25,
+  "limit": 10,
+  "offset": 0
+}
+Status Codes: 200 OK
+
+GET /api/v1/history/stats
+Description: Get aggregated statistics
+Query Params:
+  - user_id: uuid (optional)
+  - time_range: "week" | "month" | "year" | "all" (default: "all")
+Response:
+{
+  "total_sessions": 25,
+  "total_messages": 350,
+  "emotion_distribution": {
+    "anxiety": 0.4,
+    "hope": 0.3,
+    "sadness": 0.2,
+    ...
+  },
+  "most_common_themes": ["work stress", "relationships", "self-doubt"],
+  "average_session_duration_seconds": 900,
+  "time_range": "all"
+}
+Status Codes: 200 OK
+
+5.7 CRISIS DETECTION ENDPOINTS
+-------------------------------
+
+POST /api/v1/crisis/check
+Description: Check text for crisis indicators (can be called on each message)
+Request Body:
+{
+  "text": "I've been thinking about ending it all..."
+}
+Response:
+{
+  "is_crisis": true,
+  "risk_score": 0.9,
+  "detected_keywords": ["ending it all"],
+  "needs_escalation": true,
+  "resources": {
+    "lifeline": "988",
+    "crisis_text": "Text HOME to 741741",
+    "urls": [...]
+  }
+}
+Status Codes: 200 OK
+Note: This should be called automatically on each user message
+
+5.8 ERROR RESPONSES
+-------------------
+Standard Error Format:
+{
+  "error": {
+    "code": "VALIDATION_ERROR" | "NOT_FOUND" | "INTERNAL_ERROR" | "RATE_LIMIT" | ...,
+    "message": "Human-readable error message",
+    "details": { ... } // Optional, additional context
+  },
+  "timestamp": "2025-12-06T10:00:00Z"
+}
+
+Common Status Codes:
+- 200 OK: Success
+- 201 Created: Resource created
+- 202 Accepted: Request accepted, processing async
+- 400 Bad Request: Validation error
+- 401 Unauthorized: Auth required
+- 403 Forbidden: Not authorized
+- 404 Not Found: Resource doesn't exist
+- 429 Too Many Requests: Rate limit exceeded
+- 500 Internal Server Error: Server error
+- 503 Service Unavailable: Service down
+
+================================================================================
+6. ML/AI COMPONENTS
+================================================================================
+
+6.1 CONVERSATION SERVICE (LLM ORCHESTRATION)
+---------------------------------------------
+
+6.1.1 System Prompt Design
+---------------------------
+Role: Reflective Journaling Coach
+Tone: Empathetic, non-clinical, supportive
+Boundaries: Not a therapist, no diagnosis, crisis resources when needed
+
+System Prompt Template:
+"""
+You are EchoScape, an AI reflection and journaling companion. Your role is to:
+
+1. Guide users through reflective conversations about their feelings and experiences
+2. Ask thoughtful, open-ended questions that encourage self-exploration
+3. Mirror emotions back to help users understand their feelings
+4. Suggest cognitive reframing when appropriate (e.g., "What's another way to look at this?")
+5. Summarize key themes and insights at the end of conversations
+
+IMPORTANT BOUNDARIES:
+- You are NOT a therapist, psychiatrist, or medical professional
+- Do NOT diagnose, prescribe, or provide medical advice
+- Do NOT use clinical language (avoid: "diagnosis", "treatment", "disorder", "symptoms")
+- Use everyday language: "feelings", "patterns", "perspectives", "reflections"
+- If you detect crisis language (self-harm, suicide, violence), respond with:
+  "I'm concerned about what you're sharing. This is beyond what I can help with.
+   Please reach out to: [crisis resources]"
+- Keep conversations focused on reflection and self-awareness, not problem-solving
+
+CONVERSATION STYLE:
+- Warm and empathetic
+- Ask follow-up questions
+- Reflect back what you hear
+- Validate emotions without judgment
+- Suggest reframing gently ("Have you considered...", "What if...")
+- Keep responses concise (2-3 sentences typically)
+
+END OF SESSION:
+When the user indicates they're done or after 10-15 exchanges, provide:
+1. A brief summary of what was discussed
+2. Key emotions you noticed
+3. Main themes
+4. A visual metaphor suggestion (e.g., "This feels like walking through a tunnel with light ahead")
+"""
+
+6.1.2 Conversation Flow Logic
+------------------------------
+State Machine:
+- INITIAL: Waiting for first message
+- ACTIVE: Conversation in progress
+- SUMMARIZING: Generating summary
+- COMPLETED: Session ended
+
+Message Processing:
+1. Receive user message
+2. Check for crisis indicators (parallel)
+3. Load conversation history (last 10-15 messages for context)
+4. Build prompt: system prompt + history + current message
+5. Call LLM API
+6. Parse response
+7. Check response for safety issues
+8. Save to database
+9. Return to user
+
+Context Management:
+- Keep last N messages in memory (sliding window)
+- Include session metadata (themes so far, emotions detected)
+- Track conversation length (suggest ending after 15-20 exchanges)
+
+6.1.3 Implementation (TypeScript)
+----------------------------------
+Location: backend/src/services/conversation.service.ts
+
+Key Functions:
+- startSession(sessionId: string): Promise<Session>
+- sendMessage(sessionId: string, text: string): Promise<Message>
+- generateSummary(sessionId: string): Promise<Summary>
+- detectCrisis(text: string): Promise<CrisisResult>
+
+LLM Integration:
+- Use @google/generative-ai for Gemini
+- Or openai package for OpenAI
+- Implement retry logic with exponential backoff
+- Handle rate limits gracefully
+- Log all API calls for debugging
+
+6.2 ML ANALYTICS SERVICE
+------------------------
+
+6.2.1 Emotion Classification Model
+-----------------------------------
+Model Choice: j-hartmann/emotion-english-distilroberta-base
+- Pre-trained on emotion classification
+- Outputs: joy, sadness, anger, fear, surprise, disgust, neutral
+- Can be extended with custom emotions
+
+Implementation Approach:
+Option A: Use Hugging Face Inference API (easiest)
+- No model hosting needed
+- Pay per request
+- Good for MVP
+
+Option B: Deploy model via Hugging Face Spaces
+- Free hosting
+- Custom endpoint
+- Good for hackathon
+
+Option C: Fine-tune and deploy own model (advanced)
+- More control
+- Better accuracy for our use case
+- Requires training data
+
+Emotion Vector Aggregation:
+- Run classifier on each user message
+- Aggregate scores across session
+- Weight recent messages more heavily
+- Output: { emotion: score } for each emotion
+
+6.2.2 Cognitive Pattern Detection
+----------------------------------
+Patterns to Detect:
+- Catastrophizing: "This is the worst thing ever", "Everything will go wrong"
+- All-or-nothing: "I always fail", "Nothing ever works"
+- Overgeneralization: "Everyone hates me", "I'm terrible at everything"
+- Personalization: "It's all my fault", "I caused this"
+- Mind reading: "They think I'm stupid", "They're judging me"
+- Fortune telling: "I'll never succeed", "This will end badly"
+- Emotional reasoning: "I feel bad, so things are bad"
+- Should statements: "I should be better", "I must not fail"
+
+Implementation:
+Option A: Rule-based + LLM fallback
+- Keyword matching for common patterns
+- LLM checks for context
+- Fast and good enough for MVP
+
+Option B: Fine-tuned classifier
+- Train on labeled examples
+- More accurate
+- Requires training data
+
+6.2.3 Emotion → FIBO Parameter Mapping
+--------------------------------------
+This is where ML really shines - learning the mapping from emotions to visual parameters.
+
+Input: Emotion Vector
+{
+  "anxiety": 0.7,
+  "hope": 0.4,
+  "sadness": 0.3,
+  ...
+}
+
+Output: Visual Parameters
+{
+  "light_level": 0.4,
+  "openness": 0.3,
+  "warmth": 0.2,
+  "intensity": 0.7,
+  "contrast": 0.6,
+  "camera_distance": 0.5,
+  "color_temperature": 0.3
+}
+
+Mapping Approaches:
+
+Approach 1: Hand-crafted Rules (MVP)
+- Define rules: "anxiety > 0.6 → low light, close camera, cool colors"
+- Fast to implement
+- Predictable
+- Good baseline
+
+Approach 2: Learned Linear Transformation (Better)
+- Train a simple neural network:
+  Input: 8-dim emotion vector
+  Output: 7-dim visual params
+  Architecture: Linear layer (8 → 7) with sigmoid activation
+- Requires labeled data (emotion vectors → preferred visual params)
+- Can collect via user feedback: "Does this image match your feelings?"
+
+Approach 3: Deep Learning Model (Advanced)
+- Multi-layer perceptron
+- Can learn complex, non-linear mappings
+- Requires more data and compute
+
+Training Data Collection:
+- Start with hand-crafted rules
+- Collect user feedback: "Rate how well this image matches (1-5)"
+- Use feedback to fine-tune model
+- Iterate
+
+6.2.4 Implementation (Python)
+------------------------------
+Location: ml-service/ (separate microservice)
+
+Structure:
+ml-service/
+├── app/
+│   ├── main.py              # FastAPI app
+│   ├── models/
+│   │   ├── emotion_classifier.py
+│   │   ├── pattern_detector.py
+│   │   └── visual_mapper.py
+│   ├── services/
+│   │   ├── emotion_service.py
+│   │   └── mapping_service.py
+│   └── schemas/
+│       └── requests.py
+├── trained_models/          # Saved model files
+├── requirements.txt
+└── Dockerfile
+
+API Endpoints:
+- POST /analyze/emotions: { text: string } → { emotions: {...} }
+- POST /analyze/patterns: { text: string } → { patterns: [...] }
+- POST /map/emotions-to-visual: { emotion_vector: {...} } → { visual_params: {...} }
+
+6.3 PROMPT ENGINEERING DETAILS
+-------------------------------
+
+6.3.1 Summary Generation Prompt
+-------------------------------
+"""
+You are analyzing a conversation between a user and an AI reflection coach.
+
+Conversation:
+[Insert conversation history here]
+
+Your task:
+1. Summarize the key themes discussed (2-3 sentences)
+2. Identify the primary emotions expressed (list with confidence scores 0-1)
+3. Detect any cognitive patterns (catastrophizing, all-or-nothing thinking, etc.)
+4. Generate a visual metaphor that captures the emotional essence
+
+Output format (JSON):
+{
+  "summary": "Brief summary of the conversation",
+  "themes": ["theme1", "theme2", ...],
+  "emotions": {
+    "anxiety": 0.7,
+    "hope": 0.4,
+    ...
+  },
+  "cognitive_patterns": ["pattern1", "pattern2"],
+  "metaphor": "A visual metaphor description (1-2 sentences)"
+}
+"""
+
+6.3.2 Metaphor Generation Prompt
+--------------------------------
+"""
+Generate a visual metaphor for someone feeling:
+- Primary emotion: [emotion] at [intensity] intensity
+- Context: [brief context from conversation]
+
+The metaphor should:
+- Be symbolic and evocative (not literal)
+- Use nature, weather, or architectural imagery
+- Reflect the emotional intensity appropriately
+- Be safe and non-triggering
+- Be suitable for visual representation
+
+Respond with ONLY the metaphor description (1-2 sentences), no additional text.
+"""
+
+================================================================================
+7. FIBO INTEGRATION STRATEGY
+================================================================================
+
+7.1 FIBO API OVERVIEW
+---------------------
+FIBO (Flexible Image BOundaries) is a JSON-native text-to-image model that accepts
+structured parameters for camera, lighting, composition, etc.
+
+Key Features:
+- JSON-based prompt structure
+- Controllable camera angles, lighting, colors
+- Good for cinematic, emotional imagery
+- Available via fal.ai, DeepInfra, or direct Bria API
+
+7.2 FIBO JSON SCHEMA
+--------------------
+Our Internal Schema (maps to FIBO):
+{
+  "prompt": "string", // Main text description
+  "camera": {
+    "distance": 0.0-1.0,      // 0 = close, 1 = far
+    "fov": 30-90,              // Field of view in degrees
+    "angle": "tight_close" | "medium" | "wide" | "overhead" | "low_angle"
+  },
+  "lighting": {
+    "intensity": 0.0-1.0,      // 0 = dark, 1 = bright
+    "direction": "forward" | "side" | "back" | "top",
+    "color": "warm" | "cool" | "neutral",
+    "temperature": 0.0-1.0     // 0 = cool, 1 = warm
+  },
+  "palette": {
+    "mood": "cool_muted" | "warm_pastel" | "neutral_gray" | "vibrant",
+    "temperature": 0.0-1.0,
+    "saturation": 0.0-1.0
+  },
+  "composition": {
+    "tension": 0.0-1.0,        // 0 = calm, 1 = tense
+    "openness": 0.0-1.0,        // 0 = closed/cramped, 1 = open/spacious
+    "balance": "centered" | "asymmetric" | "dynamic"
+  },
+  "style": "cinematic_emotional" | "minimalist" | "painterly"
+}
+
+7.3 EMOTION → FIBO MAPPING RULES
+---------------------------------
+Base Rules (can be learned/improved):
+
+Anxiety:
+- camera.distance: 0.3 (close, claustrophobic)
+- lighting.intensity: 0.3 (dim)
+- lighting.color: "cool"
+- palette.mood: "cool_muted"
+- composition.tension: 0.8
+- composition.openness: 0.2
+
+Hope:
+- camera.distance: 0.8 (wide, expansive)
+- lighting.intensity: 0.7 (bright)
+- lighting.color: "warm"
+- palette.mood: "warm_pastel"
+- composition.tension: 0.2
+- composition.openness: 0.9
+
+Sadness:
+- camera.distance: 0.5
+- lighting.intensity: 0.4
+- lighting.color: "cool"
+- palette.mood: "neutral_gray"
+- composition.tension: 0.4
+- composition.openness: 0.4
+
+Joy:
+- camera.distance: 0.7
+- lighting.intensity: 0.9
+- lighting.color: "warm"
+- palette.mood: "vibrant"
+- composition.tension: 0.1
+- composition.openness: 1.0
+
+7.4 REFRAMING LOGIC
+-------------------
+When user adjusts sliders, we modify the base FIBO JSON:
+
+Hope Slider (0-100):
+- lighting.intensity += (hope_value / 100) * 0.4
+- lighting.color: shift toward "warm" if hope > 60
+- composition.openness += (hope_value / 100) * 0.3
+- palette.mood: shift toward "warm_pastel" if hope > 70
+
+Intensity Slider (0-100):
+- composition.tension = intensity_value / 100
+- lighting.intensity: adjust based on base emotion
+- camera.distance: closer if intensity high
+
+Openness Slider (0-100):
+- composition.openness = openness_value / 100
+- camera.distance: further if openness high
+- camera.fov: wider if openness high
+
+Warmth Slider (0-100):
+- lighting.temperature = warmth_value / 100
+- palette.temperature = warmth_value / 100
+- lighting.color: "warm" if warmth > 60, "cool" if < 40
+
+7.5 FIBO API INTEGRATION
+------------------------
+Provider Options:
+
+Option 1: fal.ai
+- URL: https://fal.ai/models/bria/fibo/generate
+- API Key required
+- Good documentation
+- Pay per request
+
+Option 2: DeepInfra
+- URL: https://api.deepinfra.com/v1/inference/briaai/FIBO
+- API Key required
+- Competitive pricing
+- Good performance
+
+Option 3: Direct Bria API
+- If you have access
+- More control
+- Potentially better pricing
+
+Implementation:
+Location: backend/src/services/fibo.service.ts
+
+Functions:
+- generateImage(fiboJson: FIBOJson): Promise<string> // Returns image URL
+- buildFIBOJson(emotionVector: EmotionVector, metaphor: string): FIBOJson
+- reframeImage(baseFIBOJson: FIBOJson, deltas: ParameterDeltas): Promise<string>
+
+Error Handling:
+- Retry on 429 (rate limit)
+- Fallback to placeholder if API fails
+- Cache successful generations
+- Log all API calls
+
+7.6 IMAGE STORAGE STRATEGY
+--------------------------
+Option 1: Store URLs only (if FIBO provides persistent URLs)
+- Simple
+- No storage costs
+- Depends on provider
+
+Option 2: Download and store in Supabase Storage
+- More control
+- Guaranteed persistence
+- Additional storage costs
+- Need to download → upload pipeline
+
+Recommendation: Start with Option 1, migrate to Option 2 if needed
+
+================================================================================
+8. FRONTEND ARCHITECTURE
+================================================================================
+
+8.1 PROJECT STRUCTURE
+--------------------
+frontend/
+├── app/                          # Next.js App Router
+│   ├── layout.tsx               # Root layout
+│   ├── page.tsx                 # Landing page
+│   ├── session/
+│   │   ├── [id]/
+│   │   │   ├── page.tsx         # Session view
+│   │   │   └── loading.tsx
+│   ├── history/
+│   │   ├── page.tsx             # 3D history view
+│   │   └── [id]/
+│   │       └── page.tsx         # Session detail
+│   └── api/                     # API routes (if using Next.js API)
+│       └── v1/
+│           └── ...
+├── components/
+│   ├── ui/                      # shadcn components
+│   ├── chat/
+│   │   ├── ChatPanel.tsx
+│   │   ├── MessageBubble.tsx
+│   │   └── MessageInput.tsx
+│   ├── visual/
+│   │   ├── ImageDisplay.tsx
+│   │   ├── ReframeSliders.tsx
+│   │   └── BeforeAfter.tsx
+│   ├── 3d/
+│   │   ├── HistoryScene.tsx
+│   │   ├── SessionNode.tsx
+│   │   └── CameraControls.tsx
+│   └── layout/
+│       ├── Navbar.tsx
+│       └── Footer.tsx
+├── lib/
+│   ├── api/                     # API client functions
+│   │   ├── session.ts
+│   │   ├── messages.ts
+│   │   ├── visual.ts
+│   │   └── history.ts
+│   ├── hooks/                   # Custom React hooks
+│   │   ├── useSession.ts
+│   │   ├── useMessages.ts
+│   │   └── useVisual.ts
+│   ├── utils/
+│   │   ├── emotions.ts
+│   │   └── formatting.ts
+│   └── store/                   # Zustand stores
+│       ├── sessionStore.ts
+│       └── uiStore.ts
+├── styles/
+│   └── globals.css
+└── public/
+    └── ...
+
+8.2 KEY COMPONENTS
+-------------------
+
+8.2.1 ChatPanel Component
+--------------------------
+Purpose: Display conversation and handle messaging
+
+Props:
+- sessionId: string
+- messages: Message[]
+- onSendMessage: (text: string) => void
+- isLoading: boolean
+
+Features:
+- Scrollable message list
+- Auto-scroll to bottom
+- Loading indicator for AI responses
+- Message timestamps
+- Emotion indicators (optional)
+
+Implementation:
+- Use react-virtual for performance (if many messages)
+- Optimistic updates (show user message immediately)
+- Error handling with retry
+
+8.2.2 ReframeSliders Component
+-------------------------------
+Purpose: Allow user to adjust visual parameters
+
+Props:
+- baseVisualParams: VisualParams
+- onUpdate: (deltas: ParameterDeltas) => void
+- isLoading: boolean
+
+Sliders:
+- Hope (0-100)
+- Intensity (0-100)
+- Openness (0-100)
+- Warmth (0-100)
+
+Features:
+- Real-time preview (debounced API calls)
+- Before/after comparison
+- Save multiple variants
+- Reset to base
+
+8.2.3 HistoryScene Component (3D)
+----------------------------------
+Purpose: 3D visualization of session history
+
+Technology: react-three-fiber + drei
+
+Structure:
+- Canvas wrapper
+- Camera (OrbitControls)
+- Session nodes (spheres/planets)
+- Connections (optional: lines between related sessions)
+- Background (stars/space or abstract)
+
+Interaction:
+- Click node → focus camera → show session details
+- Hover → show tooltip
+- Color by emotion
+- Size by message count or duration
+
+Performance:
+- Limit visible nodes (LOD - Level of Detail)
+- Use instancing for many nodes
+- Optimize re-renders
+
+8.3 STATE MANAGEMENT
+--------------------
+Zustand Stores:
+
+sessionStore.ts:
+- currentSession: Session | null
+- sessions: Session[]
+- isLoading: boolean
+- error: string | null
+- Actions: startSession, endSession, loadSession, loadHistory
+
+messageStore.ts:
+- messages: Message[]
+- isLoading: boolean
+- Actions: sendMessage, loadMessages
+
+visualStore.ts:
+- currentVisual: Visual | null
+- variants: Visual[]
+- isLoading: boolean
+- Actions: generateVisual, updateVisual, loadVisuals
+
+8.4 ROUTING
+-----------
+Next.js App Router:
+- / → Landing page
+- /session/[id] → Active session view
+- /history → 3D history view
+- /history/[id] → Session detail page
+- /about → About page
+- /disclaimer → Safety disclaimer
+
+8.5 STYLING STRATEGY
+--------------------
+- Tailwind CSS for utility classes
+- shadcn/ui for components
+- Custom CSS for 3D canvas (minimal)
+- Dark mode support (preferred for this app)
+- Responsive design (mobile-first)
+
+Color Palette:
+- Primary: Purple/Blue (calming, tech-forward)
+- Accent: Warm orange (hope, positivity)
+- Background: Dark gray/black
+- Text: Light gray/white
+
+================================================================================
+9. IMPLEMENTATION PHASES (PIECE BY PIECE)
+================================================================================
+
+9.1 PHASE 0: SETUP & FOUNDATION (Days 1-2)
+-------------------------------------------
+Goal: Get development environment ready
+
+Tasks:
+1. Initialize Next.js project
+   - npx create-next-app@latest echoscape --typescript --tailwind --app
+   - Install dependencies: react-three-fiber, drei, zustand, zod, etc.
+
+2. Set up database
+   - Create Supabase project
+   - Run schema migrations (from section 4.1)
+   - Set up connection
+
+3. Set up environment variables
+   - .env.local with all API keys
+   - GEMINI_KEY, FIBO_API_KEY, SUPABASE_URL, etc.
+
+4. Basic project structure
+   - Create folder structure (from section 8.1)
+   - Set up TypeScript config
+   - Set up ESLint/Prettier
+
+5. Landing page (minimal)
+   - Hero section
+   - "Start Reflection" button
+   - Disclaimer
+
+Deliverable: Working Next.js app with database connection
+
+9.2 PHASE 1: CORE CONVERSATION (Days 3-5)
+------------------------------------------
+Goal: Basic chat functionality
+
+Tasks:
+1. Create session API endpoint
+   - POST /api/v1/session/start
+   - Creates session in DB
+   - Returns session_id
+
+2. Message API endpoints
+   - POST /api/v1/session/:id/message
+   - GET /api/v1/session/:id/messages
+   - Save messages to DB
+
+3. LLM integration
+   - Set up Gemini client
+   - Implement conversation service
+   - System prompt (from section 6.1.1)
+   - Basic error handling
+
+4. Chat UI
+   - ChatPanel component
+   - MessageBubble component
+   - MessageInput component
+   - Basic styling
+
+5. Session page
+   - Route: /session/[id]
+   - Load session data
+   - Display chat
+   - Handle sending messages
+
+Deliverable: Working chat interface with AI responses
+
+9.3 PHASE 2: EMOTION TRACKING (Days 6-8)
+------------------------------------------
+Goal: Track emotions during conversation
+
+Tasks:
+1. Set up ML service (Python FastAPI)
+   - Basic FastAPI app
+   - Emotion classifier endpoint
+   - Use Hugging Face model or API
+
+2. Emotion analysis integration
+   - Call ML service on each user message
+   - Store emotion snapshots
+   - Aggregate into session emotion vector
+
+3. Display emotions in UI
+   - Emotion tags/badges
+   - Emotion intensity indicators
+   - Update in real-time
+
+4. Analytics endpoint
+   - GET /api/v1/session/:id/analytics
+   - Return aggregated emotions
+
+Deliverable: Real-time emotion tracking visible in UI
+
+9.4 PHASE 3: SESSION SUMMARY (Days 9-10)
+-----------------------------------------
+Goal: Generate summary when session ends
+
+Tasks:
+1. End session endpoint
+   - POST /api/v1/session/:id/end
+   - Mark session as completed
+
+2. Summary generation
+   - LLM prompt for summary (from section 6.3.1)
+   - Extract themes, emotions, patterns
+   - Generate metaphor
+   - Save to database
+
+3. Summary display
+   - Show summary in UI
+   - Display themes
+   - Show emotion breakdown
+   - Display metaphor
+
+Deliverable: Sessions can be completed with summaries
+
+9.5 PHASE 4: FIBO VISUAL GENERATION (Days 11-13)
+-------------------------------------------------
+Goal: Generate images from sessions
+
+Tasks:
+1. FIBO service setup
+   - Set up FIBO API client
+   - Test API connection
+   - Handle errors
+
+2. Emotion → Visual mapping
+   - Implement mapping rules (from section 7.3)
+   - Build FIBO JSON from emotions
+   - Test with sample data
+
+3. Visual generation endpoint
+   - POST /api/v1/visual/generate
+   - Takes session_id
+   - Generates image
+   - Stores in database
+
+4. Image display
+   - ImageDisplay component
+   - Show generated image
+   - Loading states
+   - Error handling
+
+Deliverable: Sessions generate visual images
+
+9.6 PHASE 5: INTERACTIVE REFRAMING (Days 14-16)
+------------------------------------------------
+Goal: Allow users to adjust visuals
+
+Tasks:
+1. Reframe endpoint
+   - POST /api/v1/visual/update
+   - Takes parameter deltas
+   - Updates FIBO JSON
+   - Generates new image
+
+2. Slider component
+   - ReframeSliders component
+   - Hope, Intensity, Openness, Warmth sliders
+   - Debounced API calls
+   - Loading states
+
+3. Before/after comparison
+   - Side-by-side view
+   - Toggle between images
+   - Save variants
+
+Deliverable: Users can interactively reframe visuals
+
+9.7 PHASE 6: HISTORY VIEW (Days 17-19)
+---------------------------------------
+Goal: View past sessions
+
+Tasks:
+1. History API
+   - GET /api/v1/history
+   - List user's sessions
+   - Include thumbnails
+
+2. History list view
+   - Grid/list of sessions
+   - Thumbnails
+   - Summary previews
+   - Click to view details
+
+3. Session detail page
+   - Full conversation
+   - Summary
+   - All visuals
+   - Analytics
+
+Deliverable: Users can browse session history
+
+9.8 PHASE 7: 3D VISUALIZATION (Days 20-22)
+-------------------------------------------
+Goal: 3D history visualization
+
+Tasks:
+1. Three.js setup
+   - Install react-three-fiber
+   - Basic scene setup
+   - Camera controls
+
+2. Session nodes
+   - Create 3D nodes (spheres)
+   - Position in 3D space
+   - Color by emotion
+   - Size by activity
+
+3. Interaction
+   - Click to focus
+   - Hover tooltips
+   - Navigation
+
+4. Polish
+   - Animations
+   - Transitions
+   - Performance optimization
+
+Deliverable: 3D history visualization
+
+9.9 PHASE 8: SAFETY & POLISH (Days 23-25)
+------------------------------------------
+Goal: Crisis detection and final polish
+
+Tasks:
+1. Crisis detection
+   - Implement keyword detection
+   - LLM-based crisis check
+   - Show resources
+   - Log crisis events
+
+2. Safety disclaimers
+   - Landing page
+   - Session start
+   - Throughout app
+
+3. Error handling
+   - Comprehensive error messages
+   - Retry logic
+   - Fallbacks
+
+4. Performance optimization
+   - Image optimization
+   - Code splitting
+   - Lazy loading
+
+5. Testing
+   - Manual testing
+   - Fix bugs
+   - Edge cases
+
+Deliverable: Production-ready app
+
+9.10 PHASE 9: DEPLOYMENT (Days 26-27)
+-------------------------------------
+Goal: Deploy to production
+
+Tasks:
+1. Environment setup
+   - Production environment variables
+   - Database backups
+   - API keys
+
+2. Deploy frontend
+   - Vercel deployment
+   - Domain setup
+   - SSL certificates
+
+3. Deploy ML service
+   - Railway/Render deployment
+   - Health checks
+   - Monitoring
+
+4. Final testing
+   - End-to-end testing
+   - Performance testing
+   - Security check
+
+Deliverable: Live application
+
+================================================================================
+10. SAFETY & COMPLIANCE
+================================================================================
+
+10.1 CRISIS DETECTION
+---------------------
+Multi-layer approach:
+
+Layer 1: Keyword Detection (Fast)
+- Check for high-risk keywords
+- Immediate flag
+- Low false positive rate
+
+Layer 2: LLM Analysis (Accurate)
+- Send message to LLM with crisis detection prompt
+- More nuanced understanding
+- Higher accuracy
+
+Layer 3: Pattern Detection (Contextual)
+- Track patterns across conversation
+- Escalating language
+- Sudden mood shifts
+
+Response Protocol:
+1. Immediately show crisis resources
+2. Do NOT generate intense imagery
+3. Log crisis event
+4. Optionally: Suggest professional help
+5. Continue conversation if user wants, but with resources visible
+
+10.2 DISCLAIMERS
+----------------
+Required disclaimers:
+
+Landing Page:
+"This tool is for self-reflection and journaling. It is not a substitute for professional therapy, medical advice, or crisis support. If you are experiencing a mental health emergency, please contact: [resources]"
+
+Session Start:
+"Remember: This is a reflection tool, not therapy. For crisis support, call 988 or text HOME to 741741."
+
+Throughout App:
+- Footer with resources
+- Help button with crisis info
+- Clear boundaries in AI responses
+
+10.3 DATA PRIVACY
+-----------------
+- Clear privacy policy
+- Data retention policy
+- User data deletion option
+- No sharing of personal data
+- Encrypted storage
+- Secure API keys
+
+10.4 CONTENT MODERATION
+-----------------------
+- Filter inappropriate content
+- Block harmful imagery requests
+- Monitor for abuse
+- Rate limiting
+
+================================================================================
+11. DEPLOYMENT STRATEGY
+================================================================================
+
+11.1 FRONTEND DEPLOYMENT (Vercel)
+----------------------------------
+Steps:
+1. Connect GitHub repo to Vercel
+2. Set environment variables
+3. Configure build settings
+4. Deploy
+5. Set up custom domain (optional)
+
+Environment Variables:
+- NEXT_PUBLIC_API_URL
+- GEMINI_KEY
+- FIBO_API_KEY
+- SUPABASE_URL
+- SUPABASE_KEY
+
+11.2 DATABASE (Supabase)
+------------------------
+Steps:
+1. Create Supabase project
+2. Run migrations
+3. Set up backups
+4. Configure connection pooling
+5. Set up monitoring
+
+11.3 ML SERVICE (Railway/Render)
+--------------------------------
+Steps:
+1. Create Dockerfile
+2. Push to GitHub
+3. Connect to Railway/Render
+4. Set environment variables
+5. Deploy
+6. Set up health checks
+
+Dockerfile example:
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+11.4 MONITORING
+---------------
+Set up:
+- Error tracking (Sentry)
+- Analytics (PostHog)
+- Uptime monitoring
+- API rate limit monitoring
+- Database performance monitoring
+
+================================================================================
+12. TESTING STRATEGY
+================================================================================
+
+12.1 UNIT TESTS
+---------------
+Test:
+- API route handlers
+- Service functions
+- Utility functions
+- ML model inference
+
+Tools: Jest (Node.js), pytest (Python)
+
+12.2 INTEGRATION TESTS
+----------------------
+Test:
+- API endpoints end-to-end
+- Database operations
+- LLM integration
+- FIBO integration
+
+Tools: Supertest (Node.js), pytest (Python)
+
+12.3 E2E TESTS
+--------------
+Test:
+- User flows
+- Complete session creation
+- Visual generation
+- Reframing
+
+Tools: Playwright or Cypress
+
+12.4 MANUAL TESTING CHECKLIST
+------------------------------
+- [ ] Start new session
+- [ ] Send messages
+- [ ] Receive AI responses
+- [ ] End session
+- [ ] Generate summary
+- [ ] Generate visual
+- [ ] Adjust sliders
+- [ ] View history
+- [ ] Navigate 3D view
+- [ ] Crisis detection
+- [ ] Error handling
+- [ ] Mobile responsiveness
+
+================================================================================
+END OF IMPLEMENTATION PLAN
+================================================================================
+
+This plan provides a comprehensive roadmap for building EchoScape. Each phase
+builds on the previous one, allowing for iterative development and testing.
+
+Key Success Factors:
+1. Start simple, add complexity gradually
+2. Test each phase before moving to next
+3. Keep user experience in mind
+4. Prioritize safety and disclaimers
+5. Focus on core value proposition first
+
+Good luck with the implementation!

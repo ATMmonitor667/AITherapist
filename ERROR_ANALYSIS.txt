@@ -1,0 +1,147 @@
+# EchoScape Error Analysis & Solutions
+
+## Current Errors (December 15, 2024)
+
+### Error 1: 401 Unauthorized on API Requests
+**Error Message:**
+```
+Failed to load resource: the server responded with a status of 401 (Unauthorized)
+:4000/api/session/start:1
+```
+
+**Root Cause:**
+The backend requires authentication (via the `requireAuth` middleware), but the frontend is not sending the authentication token with API requests.
+
+**Why This Happens:**
+1. The Supabase session might not be initialized when the API call is made
+2. The auth token is not being retrieved from localStorage/cookies
+3. The API interceptor runs before the user session is loaded
+
+**Solution:**
+The issue is that we need to ensure the user is logged in before making API calls. The current flow tries to start a session immediately on page load, but the auth hasn't initialized yet.
+
+**Fix Required:**
+Modify the session store to wait for auth initialization before making API calls.
+
+---
+
+### Error 2: TypeScript/Promise Error
+**Error Message:**
+```
+Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'getProfileUserInfo')
+```
+
+**Root Cause:**
+This appears to be related to a missing or undefined object trying to access a method. This is likely a side effect of the auth not being properly initialized.
+
+**Solution:**
+This should resolve once the auth flow is fixed.
+
+---
+
+### Error 3: Async Response Channel Closed
+**Error Message:**
+```
+Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received
+:3000/login:1
+```
+
+**Root Cause:**
+This is a browser extension error (not your code). Some browser extension is trying to communicate with the page but failing.
+
+**Solution:**
+This can be safely ignored - it's not affecting your app. If it bothers you, try disabling browser extensions or use incognito mode.
+
+---
+
+## Recommended Fix
+
+### Step 1: Modify Session Store to Wait for Auth
+
+Update `src/store/useSessionStore.ts` to check if user is authenticated before starting a session:
+
+```typescript
+// In useSessionStore.ts, modify startNewSession:
+startNewSession: async () => {
+    // Wait for auth to initialize
+    const authStore = useAuthStore.getState();
+    if (!authStore.user) {
+        console.log('[Session] No user authenticated, skipping session start');
+        return;
+    }
+    
+    set({ isLoading: true, error: null });
+    try {
+        const session = await echoApi.startSession();
+        // ... rest of the code
+    } catch (error) {
+        // ... error handling
+    }
+}
+```
+
+### Step 2: Modify ChatPanel to Check Auth Before Auto-Start
+
+Update `src/components/chat/ChatPanel.tsx`:
+
+```typescript
+// Replace the auto-start useEffect with:
+useEffect(() => {
+    const authStore = useAuthStore.getState();
+    
+    if (!initAttempted.current && authStore.user) {
+        initAttempted.current = true;
+        startNewSession();
+    }
+}, [startNewSession]);
+```
+
+### Step 3: Add Auth Check to API Interceptor
+
+Update `src/lib/api.ts` to handle missing sessions gracefully:
+
+```typescript
+api.interceptors.request.use(async (config) => {
+    const supabase = createClient();
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+        console.error('[API] Error getting session:', error);
+        return Promise.reject(new Error('Authentication required'));
+    }
+
+    if (!session?.access_token) {
+        console.warn('[API] No access token found');
+        return Promise.reject(new Error('Not authenticated'));
+    }
+
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+    return config;
+});
+```
+
+---
+
+## Quick Test Checklist
+
+After applying fixes:
+
+1. ✅ Log out completely
+2. ✅ Clear browser cache and localStorage
+3. ✅ Log in again
+4. ✅ Check console for "[API] Session: Found" and "[API] Access token: Present"
+5. ✅ Try sending a chat message
+6. ✅ Verify no 401 errors in Network tab
+
+---
+
+## Additional Notes
+
+- The hydration errors are a separate React issue and can be addressed later
+- The browser extension error (#3) is harmless and can be ignored
+- Make sure your `.env.local` has valid Supabase credentials
+- Make sure your backend `.env` has the correct SUPABASE_SERVICE_KEY
+
+---
+
+Generated: December 15, 2024
